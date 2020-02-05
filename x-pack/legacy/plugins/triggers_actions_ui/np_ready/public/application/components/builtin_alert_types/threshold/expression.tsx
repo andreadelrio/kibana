@@ -453,7 +453,7 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<Props> =
           id="xpack.triggersActionsUI.sections.alertAdd.selectIndex"
         />
       </EuiText>
-      <EuiFlexGroup gutterSize="s" wrap>
+      <EuiFlexGroup wrap>
         <EuiFlexItem grow={false}>
           <EuiPopover
             id="indexPopover"
@@ -496,6 +496,8 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<Props> =
             </div>
           </EuiPopover>
         </EuiFlexItem>
+      </EuiFlexGroup>
+      <EuiFlexGroup>
         <EuiFlexItem grow={false}>
           <EuiPopover
             id="aggTypePopover"
@@ -556,6 +558,7 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<Props> =
           <EuiFlexItem grow={false}>
             <EuiPopover
               id="aggFieldPopover"
+              ownFocus
               button={
                 <EuiExpression
                   description={i18n.translate(
@@ -625,6 +628,8 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<Props> =
             </EuiPopover>
           </EuiFlexItem>
         ) : null}
+      </EuiFlexGroup>
+      <EuiFlexGroup>
         <EuiFlexItem grow={false}>
           <EuiPopover
             id="groupByPopover"
