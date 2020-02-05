@@ -27,6 +27,8 @@ import {
   EuiButtonIcon,
   EuiEmptyPrompt,
   EuiButtonEmpty,
+  EuiText,
+  EuiHorizontalRule,
 } from '@elastic/eui';
 import { useAppDependencies } from '../../app_context';
 import { loadAlertTypes } from '../../lib/alert_api';
@@ -579,12 +581,13 @@ export const AlertForm = ({
 
   const alertTypeDetails = (
     <Fragment>
+      <EuiHorizontalRule />
       <EuiFlexGroup alignItems="center" gutterSize="s">
         <EuiFlexItem>
           <EuiTitle size="s" data-test-subj="selectedAlertTypeTitle">
             <h5 id="selectedAlertTypeTitle">
               <FormattedMessage
-                defaultMessage="Trigger: {alertType}"
+                defaultMessage="{alertType}"
                 id="xpack.triggersActionsUI.sections.alertForm.selectedAlertTypeTitle"
                 values={{ alertType: alertTypeModel ? alertTypeModel.name : '' }}
               />
@@ -593,17 +596,19 @@ export const AlertForm = ({
         </EuiFlexItem>
         {canChangeTrigger ? (
           <EuiFlexItem grow={false}>
-            <EuiLink
-              onClick={() => {
-                setAlertProperty('alertTypeId', null);
-                setAlertTypeModel(null);
-              }}
-            >
-              <FormattedMessage
-                defaultMessage="Change"
-                id="xpack.triggersActionsUI.sections.alertForm.changeAlertTypeLink"
-              />
-            </EuiLink>
+            <EuiText size="s">
+              <EuiLink
+                onClick={() => {
+                  setAlertProperty('alertTypeId', null);
+                  setAlertTypeModel(null);
+                }}
+              >
+                <FormattedMessage
+                  defaultMessage="Change"
+                  id="xpack.triggersActionsUI.sections.alertForm.changeAlertTypeLink"
+                />
+              </EuiLink>
+            </EuiText>
           </EuiFlexItem>
         ) : null}
       </EuiFlexGroup>
@@ -822,6 +827,7 @@ export const AlertForm = ({
         <Fragment>{alertTypeDetails}</Fragment>
       ) : (
         <Fragment>
+          <EuiHorizontalRule />
           <EuiTitle size="s">
             <h5 id="alertTypeTitle">
               <FormattedMessage

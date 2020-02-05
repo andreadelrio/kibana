@@ -446,6 +446,13 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<Props> =
           <EuiSpacer />
         </Fragment>
       ) : null}
+      <EuiSpacer size="l" />
+      <EuiText size="s">
+        <FormattedMessage
+          defaultMessage="Select Index to query"
+          id="xpack.triggersActionsUI.sections.alertAdd.selectIndex"
+        />
+      </EuiText>
       <EuiFlexGroup gutterSize="s" wrap>
         <EuiFlexItem grow={false}>
           <EuiPopover
@@ -737,6 +744,16 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<Props> =
             </div>
           </EuiPopover>
         </EuiFlexItem>
+      </EuiFlexGroup>
+      <EuiSpacer size="xl" />
+      <EuiText size="s">
+        <FormattedMessage
+          defaultMessage="Define the alert condition:"
+          id="xpack.triggersActionsUI.sections.alertAdd.conditionPrompt"
+        />
+      </EuiText>
+      <EuiSpacer size="m" />
+      <EuiFlexGroup>
         <EuiFlexItem grow={false}>
           <EuiPopover
             id="alertThresholdPopover"
