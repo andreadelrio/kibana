@@ -10,6 +10,7 @@ import { FormattedMessage } from '@kbn/i18n/react';
 import {
   EuiFlexItem,
   EuiFlexGroup,
+  EuiFormLabel,
   EuiExpression,
   EuiPopover,
   EuiPopoverTitle,
@@ -447,12 +448,13 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<Props> =
         </Fragment>
       ) : null}
       <EuiSpacer size="l" />
-      <EuiText size="s">
+      <EuiFormLabel>
         <FormattedMessage
-          defaultMessage="Select Index to query"
+          defaultMessage="Select Index to query:"
           id="xpack.triggersActionsUI.sections.alertAdd.selectIndex"
         />
-      </EuiText>
+      </EuiFormLabel>
+      <EuiSpacer size="m" />
       <EuiFlexGroup wrap>
         <EuiFlexItem grow={false}>
           <EuiPopover
@@ -751,12 +753,12 @@ export const IndexThresholdAlertTypeExpression: React.FunctionComponent<Props> =
         </EuiFlexItem>
       </EuiFlexGroup>
       <EuiSpacer size="xl" />
-      <EuiText size="s">
+      <EuiFormLabel>
         <FormattedMessage
           defaultMessage="Define the alert condition:"
           id="xpack.triggersActionsUI.sections.alertAdd.conditionPrompt"
         />
-      </EuiText>
+      </EuiFormLabel>
       <EuiSpacer size="m" />
       <EuiFlexGroup>
         <EuiFlexItem grow={false}>

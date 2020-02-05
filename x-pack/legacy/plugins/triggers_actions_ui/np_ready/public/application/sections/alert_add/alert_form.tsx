@@ -596,19 +596,20 @@ export const AlertForm = ({
         </EuiFlexItem>
         {canChangeTrigger ? (
           <EuiFlexItem grow={false}>
-            <EuiText size="s">
-              <EuiLink
-                onClick={() => {
-                  setAlertProperty('alertTypeId', null);
-                  setAlertTypeModel(null);
-                }}
-              >
-                <FormattedMessage
-                  defaultMessage="Change"
-                  id="xpack.triggersActionsUI.sections.alertForm.changeAlertTypeLink"
-                />
-              </EuiLink>
-            </EuiText>
+            <EuiButtonIcon
+              iconType="cross"
+              color="danger"
+              aria-label={i18n.translate(
+                'xpack.triggersActionsUI.sections.alertForm.changeAlertTypeAriaLabel',
+                {
+                  defaultMessage: 'Delete',
+                }
+              )}
+              onClick={() => {
+                setAlertProperty('alertTypeId', null);
+                setAlertTypeModel(null);
+              }}
+            />
           </EuiFlexItem>
         ) : null}
       </EuiFlexGroup>
@@ -624,7 +625,7 @@ export const AlertForm = ({
       {selectedGroupActions}
       {isAddActionPanelOpen ? (
         <Fragment>
-          <EuiTitle size="s">
+          <EuiTitle size="xs">
             <h5 id="alertActionTypeTitle">
               <FormattedMessage
                 defaultMessage="Actions: Select an action type"
