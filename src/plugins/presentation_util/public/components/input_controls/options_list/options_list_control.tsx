@@ -11,10 +11,14 @@ import {
   EuiButtonEmpty,
   EuiNotificationBadge,
   EuiPopover,
+  EuiFilterButton,
   EuiFieldSearch,
+  EuiFilterGroup,
   EuiFilterSelectItem,
   EuiPopoverTitle,
   EuiSelectableProps,
+  EuiFormControlLayout,
+  EuiSpacer,
 } from '@elastic/eui';
 
 import classNames from 'classnames';
@@ -43,7 +47,7 @@ export const OptionsListControl = ({ twoLine, title, options }: OptionsListContr
     setSelectableOptions(newItems);
   }
 
-  const button = (
+  const customFilterButton = (
     <EuiButtonEmpty
       color="text"
       className="optionsList--buttonOverride"
@@ -55,8 +59,7 @@ export const OptionsListControl = ({ twoLine, title, options }: OptionsListContr
       onClick={() => setIsPopoverOpen((open) => !open)}
       contentProps={{ className: 'optionsList--buttonContentOverride' }}
     >
-      <span className="optionsList--title">{startCase(title)}</span>
-      <span className="optionsList--control">
+      <span className="optionsList--control eui-textTruncate">
         <span
           className={classNames('optionsList--selections', {
             'optionsList--selectionsEmpty': selected.length === 0,
@@ -81,27 +84,156 @@ export const OptionsListControl = ({ twoLine, title, options }: OptionsListContr
     </EuiButtonEmpty>
   );
 
-  return (
-    <EuiPopover
-      id="popoverExampleMultiSelect"
-      button={button}
-      isOpen={isPopoverOpen}
-      anchorClassName="optionsList--anchorOverride"
-      closePopover={() => setIsPopoverOpen(false)}
-      panelPaddingSize="none"
-      anchorPosition="upLeft"
-      ownFocus
-      repositionOnScroll
+  const onButtonClick = () => {
+    setIsPopoverOpen(!isPopoverOpen);
+  };
+
+  const secoundButton = (
+    <EuiFilterButton
+      iconType="arrowDown"
+      onClick={onButtonClick}
+      isSelected={isPopoverOpen}
+      numFilters={selectableOptions.length}
+      // hasActiveFilters={!!selectableOptions.find((item) => item.checked === 'on')}
+      numActiveFilters={selectableOptions.filter((item) => item.checked === 'on').length}
     >
-      <EuiPopoverTitle paddingSize="s">NAME FIELD</EuiPopoverTitle>
-      <EuiFieldSearch compressed />
-      <div className="optionsList--items">
-        {selectableOptions.map((item, index) => (
-          <EuiFilterSelectItem checked={item.checked} key={index} onClick={() => updateItem(index)}>
-            {item.label}
-          </EuiFilterSelectItem>
-        ))}
-      </div>
-    </EuiPopover>
+      Composers
+    </EuiFilterButton>
+  );
+
+  return (
+    <>
+      {/* <EuiPopover
+        id="popoverExampleMultiSelect"
+        button={button}
+        isOpen={isPopoverOpen}
+        anchorClassName="optionsList--anchorOverride"
+        closePopover={() => setIsPopoverOpen(false)}
+        panelPaddingSize="none"
+        anchorPosition="upLeft"
+        ownFocus
+        repositionOnScroll
+      >
+        <EuiPopoverTitle paddingSize="s">{title}</EuiPopoverTitle>
+        <div className="optionsList--search">
+          <EuiFieldSearch compressed />
+        </div>
+        <div className="optionsList--items">
+          {selectableOptions.map((item, index) => (
+            <EuiFilterSelectItem
+              checked={item.checked}
+              key={index}
+              onClick={() => updateItem(index)}
+            >
+              {item.label}
+            </EuiFilterSelectItem>
+          ))}
+        </div>
+      </EuiPopover> */}
+      {/* <EuiFilterGroup>
+        <EuiPopover
+          id="popoverExampleMultiSelect"
+          button={secoundButton}
+          isOpen={isPopoverOpen}
+          closePopover={() => setIsPopoverOpen(false)}
+          panelPaddingSize="none"
+        >
+          <EuiPopoverTitle paddingSize="s">
+            <EuiFieldSearch compressed />
+          </EuiPopoverTitle>
+          <div className="euiFilterSelect__items">
+            {selectableOptions.map((item, index) => (
+              <EuiFilterSelectItem
+                checked={item.checked}
+                key={index}
+                onClick={() => updateItem(index)}
+              >
+                {item.label}
+              </EuiFilterSelectItem>
+            ))}
+          </div>
+        </EuiPopover>
+      </EuiFilterGroup> */}
+      {/* <EuiFormControlLayout
+        className="optionsList--formControlLayout"
+        prepend={
+          <EuiButtonEmpty size="s" iconSide="right">
+            {startCase(title)}
+          </EuiButtonEmpty>
+        }
+      >
+        {
+          <EuiFilterGroup className="optionsList--filterBtn">
+            <EuiPopover
+              id="popoverExampleMultiSelect"
+              button={secoundButton}
+              isOpen={isPopoverOpen}
+              closePopover={() => setIsPopoverOpen(false)}
+              panelPaddingSize="none"
+            >
+              <EuiPopoverTitle paddingSize="s">{title}</EuiPopoverTitle>
+              <EuiFieldSearch compressed />
+              <div className="euiFilterSelect__items">
+                {selectableOptions.map((item, index) => (
+                  <EuiFilterSelectItem
+                    checked={item.checked}
+                    key={index}
+                    onClick={() => updateItem(index)}
+                  >
+                    {item.label}
+                  </EuiFilterSelectItem>
+                ))}
+              </div>
+            </EuiPopover>
+          </EuiFilterGroup>
+        }
+      </EuiFormControlLayout> */}
+      {/* <EuiSpacer />
+      <EuiFormControlLayout
+        className="optionsList--formControlLayout"
+        prepend={
+          <EuiButtonEmpty size="s" iconSide="right">
+            {startCase(title)}
+          </EuiButtonEmpty>
+        }
+      >
+        {customFilterButton}
+      </EuiFormControlLayout>
+      <EuiSpacer /> */}
+      <EuiFormControlLayout
+        className="optionsList--formControlLayout"
+        prepend={
+          <EuiButtonEmpty size="s" iconSide="right">
+            {startCase(title)}
+          </EuiButtonEmpty>
+        }
+      >
+        <EuiPopover
+          id="popoverExampleMultiSelect"
+          button={customFilterButton}
+          className="optionsList--popoverOverride"
+          anchorClassName="optionsList--anchorOverride"
+          isOpen={isPopoverOpen}
+          closePopover={() => setIsPopoverOpen(false)}
+          panelPaddingSize="none"
+        >
+          <EuiPopoverTitle paddingSize="s">{title}</EuiPopoverTitle>
+          <div className="optionsList--search">
+            <EuiFieldSearch compressed />
+          </div>
+          <div className="optionsList--items">
+            {selectableOptions.map((item, index) => (
+              <EuiFilterSelectItem
+                checked={item.checked}
+                key={index}
+                onClick={() => updateItem(index)}
+              >
+                {item.label}
+              </EuiFilterSelectItem>
+            ))}
+          </div>
+        </EuiPopover>
+      </EuiFormControlLayout>
+    </>
   );
 };
