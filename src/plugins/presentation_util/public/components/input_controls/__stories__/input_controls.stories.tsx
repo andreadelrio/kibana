@@ -8,7 +8,7 @@
 
 import React from 'react';
 
-import { EuiFlexGroup, EuiFlexItem } from '@elastic/eui';
+import { EuiFlexGrid, EuiButtonEmpty, EuiFlexGroup, EuiFlexItem, EuiSpacer } from '@elastic/eui';
 
 import { decorators } from './decorators';
 import { getEuiSelectableOptions, FlightField, flightFields } from './flights';
@@ -43,17 +43,29 @@ const storybookArgTypes = {
 };
 
 export const OptionsListStory = ({ fields, twoLine }: OptionsListStorybookArgs) => (
-  <EuiFlexGroup alignItems="center" wrap={true} gutterSize={'s'}>
-    {fields.map((field) => (
-      <EuiFlexItem key={field}>
-        <OptionsListControl
-          twoLine={twoLine}
-          title={field}
-          options={getEuiSelectableOptions(field)}
-        />
-      </EuiFlexItem>
-    ))}
-  </EuiFlexGroup>
+  <>
+    <EuiFlexGrid columns={3} gutterSize={'s'}>
+      {fields.map((field, index) => (
+        <EuiFlexItem className="mili" key={field}>
+          <OptionsListControl
+            twoLine={twoLine}
+            title={field}
+            options={getEuiSelectableOptions(field)}
+          />
+        </EuiFlexItem>
+      ))}
+    </EuiFlexGrid>
+    <EuiSpacer />
+    <EuiFlexGrid columns={3} gutterSize={'s'}>
+      {fields.map((field, index) => (
+        <EuiFlexItem className="mili" key={field}>
+          <div className="keidra">
+            <EuiButtonEmpty>{index + 1} item</EuiButtonEmpty>
+          </div>
+        </EuiFlexItem>
+      ))}
+    </EuiFlexGrid>
+  </>
 );
 
 OptionsListStory.args = storybookArgs;

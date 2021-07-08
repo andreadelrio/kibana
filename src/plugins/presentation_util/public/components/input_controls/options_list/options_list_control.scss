@@ -40,9 +40,7 @@
   max-width: 100%;
 }
 
-.optionsList--twoLine {
-  flex-direction: column;
-}
+
 
 .optionsList {
   background-color: $euiFormBackgroundColor;
@@ -50,14 +48,23 @@
   border-radius: $euiBorderRadius;
   display: flex;
   align-items: stretch;
-  font-size: $euiFontSizeS;
+//   font-size: $euiFontSizeS;
   width: 100%;
+
+  &.optionsList--twoLine {
+    flex-direction: column;
+  
+    .optionsList--title {
+      padding: $euiSizeXS $euiSizeS;
+      text-align: left;
+    }
+  }
 
   .optionsList--title {
     background-color: $euiFormBorderColor;
-    padding: $euiSizeXS $euiSizeS;
-    display: flex;
-    align-items: center;
+    padding: $euiSizeS;
+//     display: flex;
+//     align-items: center;
     font-weight: $euiFontWeightBold;
   }
 
@@ -71,9 +78,9 @@
     .optionsList--selections {
       flex: 1;
       width: 0;
-      margin: $euiSizeXS $euiSizeXS 0 $euiSizeS;
+      margin: 0 $euiSizeXS 0 $euiSizeS;
       text-align: left;
-      min-width: 200px;
+      // min-width: 200px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;

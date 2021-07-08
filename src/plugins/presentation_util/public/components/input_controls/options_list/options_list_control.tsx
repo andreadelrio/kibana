@@ -93,9 +93,8 @@ export const OptionsListControl = ({ twoLine, title, options }: OptionsListContr
       ownFocus
       repositionOnScroll
     >
-      <EuiPopoverTitle paddingSize="s">
-        <EuiFieldSearch compressed />
-      </EuiPopoverTitle>
+      <EuiPopoverTitle paddingSize="s">NAME FIELD</EuiPopoverTitle>
+      <EuiFieldSearch compressed />
       <div className="optionsList--items">
         {selectableOptions.map((item, index) => (
           <EuiFilterSelectItem checked={item.checked} key={index} onClick={() => updateItem(index)}>
