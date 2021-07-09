@@ -40,18 +40,31 @@
   max-width: 100%;
 }
 
-.optionsList--twoLine {
-  flex-direction: column;
-}
-
 .optionsList {
   background-color: $euiFormBackgroundColor;
-  border: 1px solid $euiFormBorderColor;
-  border-radius: $euiBorderRadius;
-  display: flex;
-  align-items: stretch;
-  font-size: $euiFontSizeS;
+  // border: 1px solid $euiFormBorderColor;
+  // border-radius: $euiBorderRadius;
+  // display: flex;
+  // align-items: stretch;
+  // font-size: $euiFontSizeS;
   width: 100%;
+  height: 100%;
+
+  &.optionsList--twoLine {
+    // background-color: $euiFormBackgroundColor;
+    border: 1px solid $euiFormBorderColor;
+    border-radius: $euiBorderRadius;
+    display: flex;
+    align-items: stretch;
+    font-size: $euiFontSizeS;
+    // width: 100%;
+    flex-direction: column;
+
+    .optionsList--control {
+      height: $euiFormControlHeight;
+      flex-direction: row;
+    }
+  }
 
   .optionsList--title {
     background-color: $euiFormBorderColor;
@@ -64,8 +77,8 @@
   .optionsList--control {
     flex-grow: 1;
     display: flex;
-    flex-direction: row;
-    height: $euiFormControlHeight;
+    // flex-direction: row;
+    // height: $euiFormControlHeight;
     align-items: center;
 
     .optionsList--selections {
@@ -87,4 +100,17 @@
       padding: $euiSizeXS;
     }
   }
+}
+
+.optionsList--formControlLayout {
+  max-width: unset;
+}
+
+.optionsList--popoverOverride {
+  width: 100%;
+  height: 100%;
+}
+
+.tempButton {
+  width: 100%;
 }
