@@ -44,7 +44,7 @@ const storybookArgTypes = {
 
 export const OptionsListStory = ({ fields, twoLine }: OptionsListStorybookArgs) => (
   <>
-    <EuiFlexGrid columns={3} gutterSize={'s'}>
+    <EuiFlexGroup alignItems="center" wrap={true} gutterSize={'s'}>
       {fields.map((field, index) => (
         <EuiFlexItem className="mili" key={field}>
           <OptionsListControl
@@ -54,7 +54,7 @@ export const OptionsListStory = ({ fields, twoLine }: OptionsListStorybookArgs) 
           />
         </EuiFlexItem>
       ))}
-    </EuiFlexGrid>
+    </EuiFlexGroup>
     <EuiSpacer />
     <EuiFlexGrid columns={3} gutterSize={'s'}>
       {fields.map((field, index) => (
