@@ -99,9 +99,10 @@ export const OptionsListControl = ({ twoLine, title, options }: OptionsListContr
           ownFocus
           repositionOnScroll
         >
-          <EuiPopoverTitle paddingSize="s">
+          <EuiPopoverTitle paddingSize="s">{title}</EuiPopoverTitle>
+          <div className="optionsList--search">
             <EuiFieldSearch compressed />
-          </EuiPopoverTitle>
+          </div>
           <div className="optionsList--items">
             {selectableOptions.map((item, index) => (
               <EuiFilterSelectItem
