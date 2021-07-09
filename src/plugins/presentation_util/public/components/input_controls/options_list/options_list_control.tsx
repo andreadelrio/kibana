@@ -47,8 +47,9 @@ export const OptionsListControl = ({ twoLine, title, options }: OptionsListContr
   const button = (
     <EuiButtonEmpty
       color="text"
-      className={classNames('tempButton', {
-        'optionsList--buttonOverride': twoLine,
+      className={classNames('optionsList--buttonOverride', {
+        'optionsList--buttonOverrideTwoLine': twoLine,
+        'optionsList--buttonOverrideSingle': !twoLine,
       })}
       textProps={{
         className: classNames('optionsList', {
@@ -83,8 +84,6 @@ export const OptionsListControl = ({ twoLine, title, options }: OptionsListContr
       </span>
     </EuiButtonEmpty>
   );
-
-  const tempButton = <EuiButtonEmpty className="tempButton">hello</EuiButtonEmpty>;
 
   return (
     <>
