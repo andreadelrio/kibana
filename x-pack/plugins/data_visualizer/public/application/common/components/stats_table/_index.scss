@@ -81,6 +81,7 @@ $panelWidthL:     #{'max(40%, 450px)'};
 
   .dataVisualizerPanelWrapper {
     margin: $euiSizeXS $euiSizeM $euiSizeM 0;
+    height: fit-content;
     &.compressed {
       max-width: $panelWidthS;
     }
