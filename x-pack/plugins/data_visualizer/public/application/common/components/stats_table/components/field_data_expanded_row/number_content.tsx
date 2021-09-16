@@ -129,7 +129,7 @@ export const NumberContent: FC<FieldDataRowProps> = ({ config }) => {
       )}
       {distribution && (
         <ExpandedRowPanel
-          data-test-subj={'dataVisualizerFieldDataMetricDistribution'}
+          dataTestSubj={'dataVisualizerFieldDataMetricDistribution'}
           className="dataVisualizerPanelWrapper"
           grow={false}
         >

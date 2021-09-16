@@ -64,7 +64,7 @@ export const DateContent: FC<FieldDataRowProps> = ({ config }) => {
       name: '',
       field: 'function',
       render: (func: string, summaryItem: { display: ReactNode }) => summaryItem.display,
-      width: '80px',
+      width: '70px',
       align: RIGHT_ALIGNMENT as HorizontalAlignment,
     },
     {
