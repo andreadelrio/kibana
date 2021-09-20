@@ -126,6 +126,7 @@
     .controlFrame--formControlLayout {
       background-color: $euiColorEmptyShade !important;
       color: transparent !important;
+      box-shadow: none;
 
       .euiFormLabel {
         opacity: 0;
