@@ -8,6 +8,7 @@
 import { FormattedMessage } from '@kbn/i18n/react';
 import React, { FC, ReactNode } from 'react';
 import { i18n } from '@kbn/i18n';
+// import { EuiDescriptionList } from '@elastic/eui';
 import { EuiBasicTable, HorizontalAlignment, RIGHT_ALIGNMENT } from '@elastic/eui';
 import { ExpandedRowFieldHeader } from '../expanded_row_field_header';
 import { FieldDataRowProps } from '../../types';
@@ -19,7 +20,7 @@ const metaTableColumns = [
     field: 'function',
     name: '',
     render: (_: string, metaItem: { display: ReactNode }) => metaItem.display,
-    width: '25px',
+    // width: '25px',
     align: RIGHT_ALIGNMENT as HorizontalAlignment,
   },
   {
@@ -78,8 +79,24 @@ export const DocumentStatsTable: FC<FieldDataRowProps> = ({ config }) => {
     },
   ];
 
+  const favoriteVideoGames = [
+    {
+      title: 'The Elder',
+      description: '20%',
+    },
+    {
+      title: 'TIE Fighter',
+      description: '45%',
+    },
+    {
+      title: 'Quake 2',
+      description: '55%',
+    },
+  ];
+
   return (
     <ExpandedRowPanel
+      grow={false}
       dataTestSubj={'dataVisualizerDocumentStatsContent'}
       className={'dataVisualizerSummaryTableWrapper dataVisualizerPanelWrapper'}
     >
@@ -91,6 +108,7 @@ export const DocumentStatsTable: FC<FieldDataRowProps> = ({ config }) => {
         columns={metaTableColumns}
         tableCaption={metaTableTitle}
       />
+      {/* <EuiDescriptionList type="column" listItems={favoriteVideoGames} align="center" compressed /> */}
     </ExpandedRowPanel>
   );
 };

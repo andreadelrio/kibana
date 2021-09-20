@@ -6,6 +6,7 @@
  */
 
 import React, { FC, useCallback, useEffect, useState } from 'react';
+import { EuiFlexGroup, EuiFlexItem, EuiPanel } from '@elastic/eui';
 import type { FieldDataRowProps } from '../../types/field_data_row';
 import { TopValues } from '../../../top_values';
 import { EMSTermJoinConfig } from '../../../../../../../../maps/public';
@@ -42,10 +43,12 @@ export const KeywordContent: FC<FieldDataRowProps> = ({ config }) => {
   );
 
   return (
-    <ExpandedRowContent dataTestSubj={'dataVisualizerKeywordContent'}>
-      <DocumentStatsTable config={config} />
-      <TopValues stats={stats} fieldFormat={fieldFormat} barColor="secondary" />
-      {EMSSuggestion && stats && <ChoroplethMap stats={stats} suggestion={EMSSuggestion} />}
-    </ExpandedRowContent>
+    <>
+      <ExpandedRowContent dataTestSubj={'dataVisualizerKeywordContent'}>
+        <DocumentStatsTable config={config} />
+        <TopValues grow={false} stats={stats} fieldFormat={fieldFormat} barColor="secondary" />
+        {EMSSuggestion && stats && <ChoroplethMap stats={stats} suggestion={EMSSuggestion} />}
+      </ExpandedRowContent>
+    </>
   );
 };

@@ -8,6 +8,7 @@ $panelWidthL:     #{'max(40%, 450px)'};
 .dataVisualizerFieldExpandedRow {
   padding-left: $euiSize * 4;
   width: 100%;
+  padding-bottom: $euiSizeM;
 
   .fieldDataCard__valuesTitle {
     text-transform: uppercase;
@@ -52,6 +53,9 @@ $panelWidthL:     #{'max(40%, 450px)'};
   }
 
   .dataVisualizerSummaryTable {
+    table {
+      display: flex;
+    }
     .euiTableRow > .euiTableRowCell {
       border-bottom: 0;
     }
@@ -60,19 +64,19 @@ $panelWidthL:     #{'max(40%, 450px)'};
     }
   }
 
-  .dataVisualizerSummaryTableWrapper {
-    min-width: $panelWidthS;
-    max-width: $panelWidthS;
-  }
+  // .dataVisualizerSummaryTableWrapper {
+  //   min-width: $panelWidthS;
+  //   max-width: $panelWidthS;
+  // }
 
   .dataVisualizerMapWrapper {
     min-height: 250px;
-    min-width: $panelWidthL;
+    // min-width: $panelWidthL;
   }
 
-  .dataVisualizerTopValuesWrapper {
-    min-width: $panelWidthS;
-  }
+  // .dataVisualizerTopValuesWrapper {
+  //   min-width: $panelWidthS;
+  // }
 
   .dataVisualizerUniformPanel {
     min-width: $panelWidthS;
@@ -80,11 +84,11 @@ $panelWidthL:     #{'max(40%, 450px)'};
   }
 
   .dataVisualizerPanelWrapper {
-    margin: $euiSizeXS $euiSizeM $euiSizeM 0;
+    // margin: $euiSizeXS $euiSizeM $euiSizeM 0;
     height: fit-content;
-    &.compressed {
-      width: $panelWidthS;
-    }
+    // &.compressed {
+    //   width: $panelWidthS;
+    // }
   }
 
   .dataVisualizerTextContent {
