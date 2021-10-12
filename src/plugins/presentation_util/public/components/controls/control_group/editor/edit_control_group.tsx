@@ -6,7 +6,7 @@
  * Side Public License, v 1.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   EuiTitle,
   EuiSpacer,
@@ -17,6 +17,7 @@ import {
   EuiButtonGroup,
   EuiButtonEmpty,
   EuiFlyoutHeader,
+  EuiCheckbox,
 } from '@elastic/eui';
 
 import {
@@ -44,6 +45,11 @@ export const EditControlGroup = () => {
 
   const dispatch = useEmbeddableDispatch();
   const { panels, controlStyle, defaultControlWidth } = useEmbeddableSelector((state) => state);
+  const [checked, setChecked] = useState(false);
+
+  const onChange = (e) => {
+    setChecked(e.target.checked);
+  };
 
   return (
     <>
@@ -92,7 +98,13 @@ export const EditControlGroup = () => {
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFormRow>
-
+        <EuiSpacer size="s" />
+        <EuiCheckbox
+          id="widthsCheckbox"
+          label={ControlGroupStrings.management.getSetAllWidthsToDefaultTitle()}
+          checked={checked}
+          onChange={(e) => onChange(e)}
+        />
         <EuiSpacer size="xl" />
 
         <EuiButtonEmpty
