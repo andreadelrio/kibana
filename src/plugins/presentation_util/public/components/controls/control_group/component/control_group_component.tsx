@@ -14,7 +14,7 @@ import {
   EuiFlexGroup,
   EuiFlexItem,
   EuiToolTip,
-  EuiEmptyPrompt,
+  EuiPanel,
 } from '@elastic/eui';
 import React, { useMemo, useState } from 'react';
 import classNames from 'classnames';
@@ -102,29 +102,12 @@ export const ControlGroup = () => {
   const emptyState = !(idsInOrder && idsInOrder.length > 0);
 
   return (
-    <div className={classNames('controlsWrapper', { 'controlsWrapper-empty': emptyState })}>
+    <EuiPanel
+      borderRadius="m"
+      className={classNames('controlsWrapper', { 'controlsWrapper-empty': emptyState })}
+    >
       {idsInOrder.length > 0 ? (
-        <div className="editActions">
-          <>
-            <EuiToolTip content={ControlGroupStrings.management.getManageButtonTitle()}>
-              <EuiButtonIcon
-                aria-label={ControlGroupStrings.management.getManageButtonTitle()}
-                iconType="gear"
-                color="text"
-                data-test-subj="inputControlsSortingButton"
-                onClick={() =>
-                  openFlyout(forwardAllContext(<EditControlGroup />, reduxContainerContext))
-                }
-              />
-            </EuiToolTip>
-            <EuiToolTip content={ControlGroupStrings.management.getAddControlTitle()}>
-              <CreateControlButton />
-            </EuiToolTip>
-          </>
-        </div>
-      ) : undefined}
-      {idsInOrder.length > 0 ? (
-        <EuiFlexGroup wrap={false} direction="row" alignItems="center">
+        <EuiFlexGroup gutterSize="m" wrap={false} direction="row" alignItems="center">
           <EuiFlexItem>
             <DndContext
               onDragStart={({ active }) => setDraggingId(active.id)}
@@ -160,6 +143,29 @@ export const ControlGroup = () => {
               </DragOverlay>
             </DndContext>
           </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiFlexGroup gutterSize="xs">
+              <EuiFlexItem>
+                <EuiToolTip content={ControlGroupStrings.management.getManageButtonTitle()}>
+                  <EuiButtonIcon
+                    aria-label={ControlGroupStrings.management.getManageButtonTitle()}
+                    iconType="gear"
+                    display="fill"
+                    color="text"
+                    data-test-subj="inputControlsSortingButton"
+                    onClick={() =>
+                      openFlyout(forwardAllContext(<EditControlGroup />, reduxContainerContext))
+                    }
+                  />
+                </EuiToolTip>
+              </EuiFlexItem>
+              <EuiFlexItem>
+                <EuiToolTip content={ControlGroupStrings.management.getAddControlTitle()}>
+                  <CreateControlButton />
+                </EuiToolTip>
+              </EuiFlexItem>
+            </EuiFlexGroup>
+          </EuiFlexItem>
         </EuiFlexGroup>
       ) : (
         <>
@@ -177,6 +183,6 @@ export const ControlGroup = () => {
           </EuiFlexGroup>
         </>
       )}
-    </div>
+    </EuiPanel>
   );
 };

@@ -8,11 +8,11 @@ $controlMinWidth: $euiSize * 14;
   overflow-x: clip; // sometimes when using auto width, removing a control can cause a horizontal scrollbar to appear.
   min-height: $euiSize * 4;
   // padding: $euiSize 0;
-  padding: $euiSizeXS $euiSize $euiSize $euiSize;
+  // padding: $euiSizeXS $euiSize $euiSize $euiSize;
 }
 
 .controlsWrapper {
-  min-height: $euiSize * 4;
+  // min-height: $euiSize * 4;
   &-empty {
     display: flex;
     background: url(https://i.ibb.co/7xcnfXF/sample-a.png);
@@ -21,11 +21,6 @@ $controlMinWidth: $euiSize * 14;
     background-position: left top;
     background-repeat: no-repeat;
   }
-}
-
-.editActions {
-  justify-content: flex-end;
-  display: flex;
 }
 
 .controlFrame--cloneWrapper {

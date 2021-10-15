@@ -152,6 +152,7 @@ export const CreateControlButton = () => {
   return (
     <EuiButtonIcon
       {...commonButtonProps}
+      display="fill"
       onClick={() => createNewControl(getInputControlTypes()[0])}
     />
   );
