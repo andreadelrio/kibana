@@ -6,7 +6,7 @@
  * Side Public License, v 1.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   EuiTitle,
   EuiSpacer,
@@ -14,12 +14,9 @@ import {
   EuiFlexItem,
   EuiFlexGroup,
   EuiFlyoutBody,
-  EuiButton,
   EuiButtonGroup,
   EuiButtonEmpty,
   EuiFlyoutHeader,
-  EuiFlyoutFooter,
-  EuiCheckbox,
 } from '@elastic/eui';
 
 import {
@@ -47,11 +44,6 @@ export const EditControlGroup = () => {
 
   const dispatch = useEmbeddableDispatch();
   const { panels, controlStyle, defaultControlWidth } = useEmbeddableSelector((state) => state);
-  const [checked, setChecked] = useState(false);
-
-  const onChange = (e) => {
-    setChecked(e.target.checked);
-  };
 
   return (
     <>
@@ -100,13 +92,6 @@ export const EditControlGroup = () => {
             </EuiFlexItem>
           </EuiFlexGroup>
         </EuiFormRow>
-        <EuiSpacer size="s" />
-        <EuiCheckbox
-          id="widthsCheckbox"
-          label={ControlGroupStrings.management.getSetAllWidthsToDefaultTitle()}
-          checked={checked}
-          onChange={(e) => onChange(e)}
-        />
         <EuiSpacer size="xl" />
 
         <EuiButtonEmpty
@@ -133,20 +118,6 @@ export const EditControlGroup = () => {
           {ControlGroupStrings.management.getDeleteAllButtonTitle()}
         </EuiButtonEmpty>
       </EuiFlyoutBody>
-      <EuiFlyoutFooter>
-        <EuiFlexGroup justifyContent="spaceBetween">
-          <EuiFlexItem grow={false}>
-            <EuiButtonEmpty aria-label="delete" iconType="cross" onClick={() => {}}>
-              {ControlGroupStrings.manageControl.getCancelTitle()}
-            </EuiButtonEmpty>
-          </EuiFlexItem>
-          <EuiFlexItem grow={false}>
-            <EuiButton aria-label="save" iconType="check" color="primary" onClick={() => {}}>
-              {ControlGroupStrings.manageControl.getSaveChangesTitle()}
-            </EuiButton>
-          </EuiFlexItem>
-        </EuiFlexGroup>
-      </EuiFlyoutFooter>
     </>
   );
 };

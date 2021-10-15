@@ -32,11 +32,19 @@ export type SortableControlProps = ControlFrameProps & {
  */
 export const SortableControl = (frameProps: SortableControlProps) => {
   const { embeddableId } = frameProps;
-  const { over, listeners, isSorting, transform, transition, attributes, isDragging, setNodeRef } =
-    useSortable({
-      id: embeddableId,
-      animateLayoutChanges: () => true,
-    });
+  const {
+    over,
+    listeners,
+    isSorting,
+    transform,
+    transition,
+    attributes,
+    isDragging,
+    setNodeRef,
+  } = useSortable({
+    id: embeddableId,
+    animateLayoutChanges: () => true,
+  });
 
   frameProps.dragInfo = { ...frameProps.dragInfo, isOver: over?.id === embeddableId, isDragging };
 
@@ -107,10 +115,10 @@ export const ControlClone = ({ draggingId }: { draggingId: string }) => {
   return (
     <EuiFlexItem
       className={classNames('controlFrame--cloneWrapper', {
-        'controlFrame--cloneWrapper-small': width === 'small',
-        'controlFrame--cloneWrapper-medium': width === 'medium',
-        'controlFrame--cloneWrapper-large': width === 'large',
-        'controlFrame--cloneWrapper-twoLine': controlStyle === 'twoLine',
+        'controlFrame--cloneWrapper--small': width === 'small',
+        'controlFrame--cloneWrapper--medium': width === 'medium',
+        'controlFrame--cloneWrapper--large': width === 'large',
+        'controlFrame--cloneWrapper--twoLine': controlStyle === 'twoLine',
       })}
     >
       {controlStyle === 'twoLine' ? <EuiFormLabel>{title}</EuiFormLabel> : undefined}

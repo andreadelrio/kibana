@@ -15,6 +15,7 @@ import {
   EuiFlexItem,
   EuiToolTip,
   EuiPanel,
+  EuiText,
 } from '@elastic/eui';
 import React, { useMemo, useState } from 'react';
 import classNames from 'classnames';
@@ -64,7 +65,7 @@ export const ControlGroup = () => {
   const dispatch = useEmbeddableDispatch();
 
   // current state
-  const { panels } = useEmbeddableSelector((state) => state);
+  const { panels, controlStyle } = useEmbeddableSelector((state) => state);
 
   const idsInOrder = useMemo(
     () =>
@@ -104,7 +105,10 @@ export const ControlGroup = () => {
   return (
     <EuiPanel
       borderRadius="m"
-      className={classNames('controlsWrapper', { 'controlsWrapper-empty': emptyState })}
+      className={classNames('controlsWrapper', {
+        'controlsWrapper--empty': emptyState,
+        'controlsWrapper--twoLine': controlStyle === 'twoLine',
+      })}
     >
       {idsInOrder.length > 0 ? (
         <EuiFlexGroup gutterSize="m" wrap={false} direction="row" alignItems="center">
@@ -144,14 +148,13 @@ export const ControlGroup = () => {
             </DndContext>
           </EuiFlexItem>
           <EuiFlexItem grow={false}>
-            <EuiFlexGroup gutterSize="xs">
+            <EuiFlexGroup className="groupEditActions" gutterSize="xs">
               <EuiFlexItem>
                 <EuiToolTip content={ControlGroupStrings.management.getManageButtonTitle()}>
                   <EuiButtonIcon
                     aria-label={ControlGroupStrings.management.getManageButtonTitle()}
                     iconType="gear"
-                    display="fill"
-                    color="text"
+                    color="subdued"
                     data-test-subj="inputControlsSortingButton"
                     onClick={() =>
                       openFlyout(forwardAllContext(<EditControlGroup />, reduxContainerContext))
@@ -171,10 +174,12 @@ export const ControlGroup = () => {
         <>
           <EuiFlexGroup alignItems="center" gutterSize="xs">
             <EuiFlexItem grow={1}>
-              <p>Controls to filter and interact with your dashboard data.</p>
+              <EuiText className="emptyStateText eui-textCenter" size="s">
+                <p>Controls let you filter and interact with your dashboard data</p>
+              </EuiText>
             </EuiFlexItem>
             <EuiFlexItem grow={false}>
-              <div>
+              <div className="addControlButton">
                 <EuiButton size="s" color="primary">
                   Add control
                 </EuiButton>
