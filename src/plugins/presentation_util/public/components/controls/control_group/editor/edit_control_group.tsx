@@ -14,9 +14,11 @@ import {
   EuiFlexItem,
   EuiFlexGroup,
   EuiFlyoutBody,
+  EuiButton,
   EuiButtonGroup,
   EuiButtonEmpty,
   EuiFlyoutHeader,
+  EuiFlyoutFooter,
   EuiCheckbox,
 } from '@elastic/eui';
 
@@ -131,6 +133,20 @@ export const EditControlGroup = () => {
           {ControlGroupStrings.management.getDeleteAllButtonTitle()}
         </EuiButtonEmpty>
       </EuiFlyoutBody>
+      <EuiFlyoutFooter>
+        <EuiFlexGroup justifyContent="spaceBetween">
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty aria-label="delete" iconType="cross" onClick={() => {}}>
+              {ControlGroupStrings.manageControl.getCancelTitle()}
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiButton aria-label="save" iconType="check" color="primary" onClick={() => {}}>
+              {ControlGroupStrings.manageControl.getSaveChangesTitle()}
+            </EuiButton>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiFlyoutFooter>
     </>
   );
 };

@@ -4,10 +4,28 @@ $largeControl: $euiSize * 50;
 $controlMinWidth: $euiSize * 14;
 
 .controlGroup {
-  margin-left: $euiSizeXS;
+  // margin-left: $euiSizeXS;
   overflow-x: clip; // sometimes when using auto width, removing a control can cause a horizontal scrollbar to appear.
   min-height: $euiSize * 4;
-  padding: $euiSize 0;
+  // padding: $euiSize 0;
+  padding: $euiSizeXS $euiSize $euiSize $euiSize;
+}
+
+.controlsWrapper {
+  min-height: $euiSize * 4;
+  &-empty {
+    display: flex;
+    background: url(https://i.ibb.co/7xcnfXF/sample-a.png);
+    padding-left: $euiSizeXL * 9;
+    padding-right: $euiSizeL;
+    background-position: left top;
+    background-repeat: no-repeat;
+  }
+}
+
+.editActions {
+  justify-content: flex-end;
+  display: flex;
 }
 
 .controlFrame--cloneWrapper {
