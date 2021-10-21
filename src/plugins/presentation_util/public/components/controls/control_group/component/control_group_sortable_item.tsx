@@ -116,7 +116,7 @@ export const ControlClone = ({ draggingId }: { draggingId: string }) => {
       })}
     >
       {controlStyle === 'twoLine' ? <EuiFormLabel>{title}</EuiFormLabel> : undefined}
-      <EuiFlexGroup gutterSize="none" className={'controlFrame__draggable'}>
+      <EuiFlexGroup responsive={false} gutterSize="none" className={'controlFrame__draggable'}>
         <EuiFlexItem grow={false}>
           <EuiIcon type="grabHorizontal" className="controlFrame__dragHandle" />
         </EuiFlexItem>

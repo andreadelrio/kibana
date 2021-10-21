@@ -46,7 +46,8 @@ export const OptionsListPopover = ({
   } = useReduxEmbeddableContext<OptionsListEmbeddableInput, typeof optionsListReducers>();
 
   const dispatch = useEmbeddableDispatch();
-  const { selectedOptions, singleSelect } = useEmbeddableSelector((state) => state);
+
+  const { selectedOptions, singleSelect, title } = useEmbeddableSelector((state) => state);
 
   // track selectedOptions in a set for more efficient lookup
   const selectedOptionsSet = useMemo(() => new Set<string>(selectedOptions), [selectedOptions]);
@@ -54,9 +55,16 @@ export const OptionsListPopover = ({
 
   return (
     <>
-      <EuiPopoverTitle paddingSize="s">
-        <EuiFormRow>
-          <EuiFlexGroup gutterSize="xs" direction="row" justifyContent="spaceBetween">
+      <EuiPopoverTitle paddingSize="s">{title}</EuiPopoverTitle>
+
+      <div className="optionsList--items">
+        <div className="optionsList__actions">
+          <EuiFlexGroup
+            responsive={false}
+            gutterSize="xs"
+            direction="row"
+            justifyContent="spaceBetween"
+          >
             <EuiFlexItem>
               <EuiFieldSearch
                 compressed
@@ -100,10 +108,7 @@ export const OptionsListPopover = ({
               </EuiToolTip>
             </EuiFlexItem>
           </EuiFlexGroup>
-        </EuiFormRow>
-      </EuiPopoverTitle>
-
-      <div className="optionsList--items">
+        </div>
         {!showOnlySelected && (
           <>
             {availableOptions?.map((availableOption, index) => (
