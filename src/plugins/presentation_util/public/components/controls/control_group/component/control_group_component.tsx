@@ -110,7 +110,7 @@ export const ControlGroup = () => {
 
   let panelBg: 'subdued' | 'primary' | 'success' = 'subdued';
   if (emptyState) panelBg = 'primary';
-  if (draggingId) panelBg = 'success';
+  if (draggingId) panelBg = 'accent';
 
   return (
     <EuiPanel
