@@ -31,8 +31,10 @@ export const OptionsListPopover = ({
   searchString,
   availableOptions,
   updateSearchString,
+  width,
 }: {
   searchString: string;
+  width: number;
   loading: OptionsListComponentState['loading'];
   updateSearchString: (newSearchString: string) => void;
   availableOptions: OptionsListComponentState['availableOptions'];
@@ -105,6 +107,7 @@ export const OptionsListPopover = ({
         </EuiFormRow>
       </div>
       <div
+        style={{ width: width > 300 ? width : undefined }}
         className="optionsList__items"
         data-option-count={availableOptions?.length ?? 0}
         data-test-subj={`optionsList-control-available-options`}
