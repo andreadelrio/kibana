@@ -6,8 +6,8 @@
  * Side Public License, v 1.
  */
 
-import { EuiFilterButton, EuiFilterGroup, EuiPopover } from '@elastic/eui';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { EuiFilterButton, EuiFilterGroup, EuiPopover, useResizeObserver } from '@elastic/eui';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
 import { BehaviorSubject, Subject } from 'rxjs';
 import classNames from 'classnames';
 import { debounce, isEmpty } from 'lodash';
@@ -41,6 +41,13 @@ export const OptionsListComponent = ({
 }) => {
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const [searchString, setSearchString] = useState('');
+
+  const resizeRef = useRef(null);
+  const dimensions = useResizeObserver(resizeRef.current);
+
+  useEffect(() => {
+    console.log(dimensions);
+  }, [dimensions]);
 
   // Redux embeddable Context to get state from Embeddable input
   const {
@@ -103,21 +110,23 @@ export const OptionsListComponent = ({
   }, [validSelections, invalidSelections]);
 
   const button = (
-    <EuiFilterButton
-      iconType="arrowDown"
-      isLoading={buttonLoading}
-      className={classNames('optionsList--filterBtn', {
-        'optionsList--filterBtnSingle': controlStyle !== 'twoLine',
-        'optionsList--filterBtnPlaceholder': !hasSelections,
-      })}
-      data-test-subj={`optionsList-control-${id}`}
-      onClick={() => setIsPopoverOpen((openState) => !openState)}
-      isSelected={isPopoverOpen}
-      numActiveFilters={validSelectionsCount}
-      hasActiveFilters={Boolean(validSelectionsCount)}
-    >
-      {hasSelections ? selectionDisplayNode : OptionsListStrings.summary.getPlaceholder()}
-    </EuiFilterButton>
+    <div className="optionsList--filterBtnWrapper" ref={resizeRef}>
+      <EuiFilterButton
+        iconType="arrowDown"
+        isLoading={buttonLoading}
+        className={classNames('optionsList--filterBtn', {
+          'optionsList--filterBtnSingle': controlStyle !== 'twoLine',
+          'optionsList--filterBtnPlaceholder': !hasSelections,
+        })}
+        data-test-subj={`optionsList-control-${id}`}
+        onClick={() => setIsPopoverOpen((openState) => !openState)}
+        isSelected={isPopoverOpen}
+        numActiveFilters={validSelectionsCount}
+        hasActiveFilters={Boolean(validSelectionsCount)}
+      >
+        {hasSelections ? selectionDisplayNode : OptionsListStrings.summary.getPlaceholder()}
+      </EuiFilterButton>
+    </div>
   );
 
   return (
@@ -139,6 +148,7 @@ export const OptionsListComponent = ({
       >
         <OptionsListPopover
           field={field}
+          width={dimensions.width}
           loading={loading}
           searchString={searchString}
           totalCardinality={totalCardinality}
