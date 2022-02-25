@@ -7,14 +7,20 @@
  */
 
 import { OptionsListEmbeddableFactory } from '../control_types/options_list';
+import { TimesliderEmbeddableFactory } from '../control_types/time_slider';
 import { ControlsService } from '../services/controls';
 import { ControlFactory } from '..';
 
 export const populateStorybookControlFactories = (controlsServiceStub: ControlsService) => {
   const optionsListFactoryStub = new OptionsListEmbeddableFactory();
+  const timesliderFactoryStub = new TimesliderEmbeddableFactory();
 
   // cast to unknown because the stub cannot use the embeddable start contract to transform the EmbeddableFactoryDefinition into an EmbeddableFactory
   const optionsListControlFactory = optionsListFactoryStub as unknown as ControlFactory;
   optionsListControlFactory.getDefaultInput = () => ({});
   controlsServiceStub.registerControlType(optionsListControlFactory);
+
+  const timeSliderControlFactory = timesliderFactoryStub as unknown as ControlFactory;
+  timeSliderControlFactory.getDefaultInput = () => ({});
+  controlsServiceStub.registerControlType(timeSliderControlFactory);
 };
