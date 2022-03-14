@@ -20,10 +20,14 @@ import {
   OptionsListEmbeddableFactory,
   OptionsListEmbeddableInput,
 } from './control_types/options_list';
-import { TimesliderEmbeddableFactory } from './control_types/time_slider';
+import {
+  TimesliderEmbeddableFactory,
+  TimeSliderControlEmbeddableInput,
+} from './control_types/time_slider';
 import { ControlGroupContainerFactory, CONTROL_GROUP_TYPE, OPTIONS_LIST_CONTROL } from '.';
 import { controlsService } from './services/kibana/controls';
 import { EmbeddableFactory } from '../../embeddable/public';
+import { TimeSliderControlEmbeddable } from './control_types/time_slider/time_slider_embeddable';
 
 export class ControlsPlugin
   implements
@@ -76,17 +80,29 @@ export class ControlsPlugin
         optionsListFactory
       );
       registerControlType(optionsListFactory);
+
+      // Time Slider Control Factory Setup
+      const timeSliderFactoryDef = new TimesliderEmbeddableFactory();
+      const timeSliderFactory = embeddable.registerEmbeddableFactory(
+        'TIME_SLIDER',
+        timeSliderFactoryDef
+      )();
+      this.transferEditorFunctions<TimeSliderControlEmbeddableInput>(
+        timeSliderFactoryDef,
+        timeSliderFactory
+      );
+
+      registerControlType(timeSliderFactory);
     });
     const { embeddable } = _setupPlugins;
 
     // create time slider embeddable
-    const timeSliderFactory = new TimesliderEmbeddableFactory();
 
-    this.inlineEditors['TIME_SLIDER'] = {
-      controlEditorComponent: timeSliderFactory.controlEditorComponent,
-      presaveTransformFunction: timeSliderFactory.presaveTransformFunction,
-    };
-    embeddable.registerEmbeddableFactory('TIME_SLIDER', timeSliderFactory);
+    //    this.inlineEditors['TIME_SLIDER'] = {
+    //     controlEditorComponent: timeSliderFactory.controlEditorComponent,
+    //   presaveTransformFunction: timeSliderFactory.presaveTransformFunction,
+    //};
+    //embeddable.registerEmbeddableFactory('TIME_SLIDER', timeSliderFactory);
 
     return {
       registerControlType,
