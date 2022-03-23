@@ -28,14 +28,6 @@ import { TimeRange, calcAutoIntervalNear } from '../../../../data/common';
 import { ValidatedDualRange } from '../../../../kibana_react/public';
 import './time_slider.component.scss';
 
-function getTimezone() {
-  const detectedTimezone = moment.tz.guess();
-  return detectedTimezone;
-  //const dateFormatTZ = getUiSettings().get('dateFormat:tz', 'Browser');
-
-  //return dateFormatTZ === 'Browser' ? detectedTimezone : dateFormatTZ;
-}
-
 function getScaledDateFormat(interval: number): string {
   if (interval >= moment.duration(1, 'y').asMilliseconds()) {
     return 'YYYY';
@@ -79,33 +71,12 @@ export function getInterval(min: number, max: number, steps = 6): number {
   return interval;
 }
 
-export function getTicks(min: number, max: number, interval: number): EuiRangeTick[] {
-  const format = getScaledDateFormat(interval);
-  const timezone = getTimezone();
-
-  let tick = Math.ceil(min / interval) * interval;
-  const ticks: EuiRangeTick[] = [];
-  while (tick < max) {
-    ticks.push({
-      value: tick,
-      label: moment.tz(tick, timezone).format(format),
-    });
-    tick += interval;
-  }
-
-  return ticks;
-}
-
-export function epochToKbnDateFormat(epoch: number): string {
-  const dateFormat = 'MMM D, YYYY @ HH:mm:ss.SSS'; //getUiSettings().get('dateFormat', 'MMM D, YYYY @ HH:mm:ss.SSS');
-  const timezone = getTimezone();
-  return moment.tz(epoch, timezone).format(dateFormat);
-}
-
 export interface TimeSliderProps {
   range?: [number | undefined, number | undefined];
   value: [number | undefined, number | undefined];
   onChange: EuiDualRangeProps['onChange'];
+  dateFormat?: string;
+  timezone?: string;
 }
 
 const isValidRange = (maybeRange: TimeSliderProps['range']): maybeRange is [number, number] => {
@@ -113,11 +84,26 @@ const isValidRange = (maybeRange: TimeSliderProps['range']): maybeRange is [numb
 };
 
 export const TimeSlider: FC<TimeSliderProps> = (props) => {
-  const { range, value } = props;
+  const defaultProps = { dateFormat: 'MMM D, YYYY @ HH:mm:ss.SSS', timezone: 'Browser', ...props };
+  const { range, value, timezone, dateFormat } = defaultProps;
   const [isPopoverOpen, setIsPopoverOpen] = useState(false);
   const togglePopover = useCallback(() => {
     setIsPopoverOpen(!isPopoverOpen);
   }, [isPopoverOpen, setIsPopoverOpen]);
+
+  const getTimezone = useCallback(() => {
+    const detectedTimezone = moment.tz.guess();
+
+    return timezone === 'Browser' ? detectedTimezone : timezone;
+  }, [timezone]);
+
+  const epochToKbnDateFormat = useCallback(
+    (epoch: number) => {
+      const tz = getTimezone();
+      return moment.tz(epoch, tz).format(dateFormat);
+    },
+    [dateFormat, getTimezone]
+  );
 
   // If we don't have a range or we have is loading, show the loading state
   const hasRange = range !== undefined;
@@ -129,8 +115,8 @@ export const TimeSlider: FC<TimeSliderProps> = (props) => {
 
   let valueText: JSX.Element | null = null;
   if (hasValues) {
-    const lower = value[0] !== undefined ? value[0] : range![0];
-    const upper = value[1] !== undefined ? value[1] : range![1];
+    const lower = value[0] !== undefined ? value[0] : range![0]!;
+    const upper = value[1] !== undefined ? value[1] : range![1]!;
 
     // has value and doesn't have a
     const hasLowerValueInRange =
@@ -185,12 +171,11 @@ export const TimeSlider: FC<TimeSliderProps> = (props) => {
   );
 
   return (
-    //<EuiFilterGroup style={{ width: '100%', height: '100%' }}>
     <EuiPopover
       button={button}
       isOpen={isPopoverOpen}
-      className="optionsList__popoverOverride"
-      anchorClassName="optionsList__anchorOverride"
+      className="timeSlider__popoverOverride"
+      anchorClassName="timeSlider__anchorOverride"
       closePopover={() => setIsPopoverOpen(false)}
       panelPaddingSize="s"
       anchorPosition="downCenter"
@@ -198,12 +183,17 @@ export const TimeSlider: FC<TimeSliderProps> = (props) => {
       repositionOnScroll
     >
       {isValidRange(range) ? (
-        <TimeSliderComponentPopover range={range} value={value} onChange={props.onChange} />
+        <TimeSliderComponentPopover
+          range={range}
+          value={value}
+          onChange={props.onChange}
+          getTimezone={getTimezone}
+          epochToKbnDateFormat={epochToKbnDateFormat}
+        />
       ) : (
         <TimeSliderComponentPopoverNoDocuments />
       )}
     </EuiPopover>
-    //</EuiFilterGroup>
   );
 };
 
@@ -211,11 +201,13 @@ const TimeSliderComponentPopoverNoDocuments: FC = () => {
   return <EuiText color="default">There were no documents found, so no range is available</EuiText>;
 };
 
-export const TimeSliderComponentPopover: FC<TimeSliderProps & { range: [number, number] }> = ({
-  range,
-  value,
-  onChange,
-}) => {
+export const TimeSliderComponentPopover: FC<
+  TimeSliderProps & {
+    range: [number, number];
+    getTimezone: () => string;
+    epochToKbnDateFormat: (epoch: number) => string;
+  }
+> = ({ range, value, onChange, getTimezone, epochToKbnDateFormat }) => {
   const [lowerBound, upperBound] = range;
   let [lowerValue, upperValue] = value;
 
@@ -227,10 +219,54 @@ export const TimeSliderComponentPopover: FC<TimeSliderProps & { range: [number, 
     upperValue = upperBound;
   }
 
+  const fullRange = useMemo(
+    () => [Math.min(lowerValue!, lowerBound), Math.max(upperValue!, upperBound)],
+    [lowerValue, lowerBound, upperValue, upperBound]
+  );
+
+  const getTicks = useCallback(
+    (min: number, max: number, interval: number): EuiRangeTick[] => {
+      const format = getScaledDateFormat(interval);
+      const tz = getTimezone();
+
+      let tick = Math.ceil(min / interval) * interval;
+      const ticks: EuiRangeTick[] = [];
+      while (tick < max) {
+        ticks.push({
+          value: tick,
+          label: moment.tz(tick, tz).format(format),
+        });
+        tick += interval;
+      }
+
+      return ticks;
+    },
+    [getTimezone]
+  );
+
   const ticks = useMemo(() => {
-    const interval = getInterval(lowerBound, upperBound);
-    return getTicks(lowerBound, upperBound, interval);
-  }, [lowerBound, upperBound]);
+    const interval = getInterval(fullRange[0], fullRange[1]);
+    return getTicks(fullRange[0], fullRange[1], interval);
+  }, [fullRange, getTicks]);
+
+  const onChangeHandler = useCallback(
+    ([min, max]: [number, number]) => {
+      // If a value is undefined and the number that is given here matches the range bounds
+      // then we will ignore it, becuase they probably didn't actually select that value
+      const report: [number | undefined, number | undefined] = [undefined, undefined];
+      if (value[0] !== undefined || min !== range[0]) {
+        report[0] = min;
+      }
+      if (value[1] !== undefined || max !== range[1]) {
+        report[1] = max;
+      }
+
+      onChange(report);
+    },
+    [onChange, value, range]
+  );
+
+  const levels = [{ min: range[0], max: range[1], color: 'success' }];
 
   return (
     <>
@@ -240,14 +276,14 @@ export const TimeSliderComponentPopover: FC<TimeSliderProps & { range: [number, 
       <div className="rangeSlider__actions">
         <ValidatedDualRange
           id={'my-id'}
-          max={upperBound}
-          min={lowerBound}
-          onChange={onChange}
+          max={fullRange[1]}
+          min={fullRange[0]}
+          onChange={onChangeHandler}
           step={undefined}
           value={[lowerValue, upperValue]}
           fullWidth
           ticks={ticks}
-          // levels={levels}
+          levels={levels}
           showTicks
           disabled={false}
           errorMessage={''}
