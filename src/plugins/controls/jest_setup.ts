@@ -6,7 +6,9 @@
  * Side Public License, v 1.
  */
 
-export interface ControlsSettingsService {
-  getTimezone: () => string;
-  getDateFormat: () => string;
-}
+// Start the services with stubs
+import { pluginServices } from './public/services';
+import { registry } from './public/services/stub';
+
+registry.start({});
+pluginServices.setRegistry(registry);
