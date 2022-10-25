@@ -10,12 +10,19 @@ import { WritableDraft } from 'immer/dist/types/types-external';
 
 import { Filter } from '@kbn/es-query';
 
-import { OptionsListReduxState, OptionsListComponentState } from './types';
+import {
+  OptionsListReduxState,
+  OptionsListComponentState,
+  SortStrategy,
+  SortDirection,
+} from './types';
 import { OptionsListField } from '../../common/options_list/types';
 import { getIpRangeQuery } from '../../common/options_list/ip_search';
 
 export const getDefaultComponentState = (): OptionsListReduxState['componentState'] => ({
   searchString: { value: '', valid: true },
+  sortDirection: 'descending',
+  sortStrategy: 'doc_count',
 });
 
 export const optionsListReducers = {
@@ -81,6 +88,18 @@ export const optionsListReducers = {
   },
   setLoading: (state: WritableDraft<OptionsListReduxState>, action: PayloadAction<boolean>) => {
     state.output.loading = action.payload;
+  },
+  setSortStrategy: (
+    state: WritableDraft<OptionsListReduxState>,
+    action: PayloadAction<SortStrategy>
+  ) => {
+    state.componentState.sortStrategy = action.payload;
+  },
+  setSortDirection: (
+    state: WritableDraft<OptionsListReduxState>,
+    action: PayloadAction<SortDirection>
+  ) => {
+    state.componentState.sortDirection = action.payload;
   },
   setField: (
     state: WritableDraft<OptionsListReduxState>,

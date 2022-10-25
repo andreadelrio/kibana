@@ -10,8 +10,11 @@ import React, { useMemo, useState } from 'react';
 import { isEmpty } from 'lodash';
 
 import {
+  EuiContextMenuPanel,
+  EuiContextMenuItem,
   EuiFilterSelectItem,
   EuiPopoverTitle,
+  EuiPopover,
   EuiFieldSearch,
   EuiButtonIcon,
   EuiFlexGroup,
@@ -30,8 +33,9 @@ import { css } from '@emotion/react';
 import { useReduxEmbeddableContext } from '@kbn/presentation-util-plugin/public';
 
 import { optionsListReducers } from '../options_list_reducers';
-import { OptionsListReduxState } from '../types';
+import { OptionsListReduxState, SortDirection, SortStrategy } from '../types';
 import { OptionsListStrings } from './options_list_strings';
+import { batch } from 'react-redux';
 
 export interface OptionsListPopoverProps {
   width: number;
@@ -54,9 +58,18 @@ export const OptionsListPopover = ({ width, updateSearchString }: OptionsListPop
   const {
     useEmbeddableDispatch,
     useEmbeddableSelector: select,
-    actions: { selectOption, deselectOption, clearSelections, replaceSelection, setExclude },
+    actions: {
+      selectOption,
+      deselectOption,
+      clearSelections,
+      replaceSelection,
+      setExclude,
+      setSortDirection,
+      setSortStrategy,
+    },
   } = useReduxEmbeddableContext<OptionsListReduxState, typeof optionsListReducers>();
 
+  const [isSortPopoverOpen, setIsSortPopoverOpen] = useState(false);
   const dispatch = useEmbeddableDispatch();
 
   // Select current state from Redux using multiple selectors to avoid rerenders.
@@ -64,6 +77,8 @@ export const OptionsListPopover = ({ width, updateSearchString }: OptionsListPop
   const totalCardinality = select((state) => state.componentState.totalCardinality);
   const availableOptions = select((state) => state.componentState.availableOptions);
   const searchString = select((state) => state.componentState.searchString);
+  const sortDirection = select((state) => state.componentState.sortDirection);
+  const sortStrategy = select((state) => state.componentState.sortStrategy);
   const field = select((state) => state.componentState.field);
 
   const selectedOptions = select((state) => state.explicitInput.selectedOptions);
@@ -73,6 +88,11 @@ export const OptionsListPopover = ({ width, updateSearchString }: OptionsListPop
 
   const loading = select((state) => state.output.loading);
 
+  const sortSettings = useMemo(
+    () => `${sortStrategy}_${sortDirection}`,
+    [sortDirection, sortStrategy]
+  );
+
   // track selectedOptions and invalidSelections in sets for more efficient lookup
   const selectedOptionsSet = useMemo(() => new Set<string>(selectedOptions), [selectedOptions]);
   const invalidSelectionsSet = useMemo(
@@ -81,6 +101,69 @@ export const OptionsListPopover = ({ width, updateSearchString }: OptionsListPop
   );
 
   const [showOnlySelected, setShowOnlySelected] = useState(false);
+
+  const sortPopoverButton = (
+    <EuiToolTip
+      position="top"
+      content={OptionsListStrings.popover.getClearAllSelectionsButtonTitle()}
+    >
+      <EuiButtonIcon
+        size="s"
+        iconType="sortable"
+        data-test-subj="optionsList-control-clear-all-selections"
+        aria-label={OptionsListStrings.popover.getClearAllSelectionsButtonTitle()}
+        onClick={() => setIsSortPopoverOpen(!isSortPopoverOpen)}
+      />
+    </EuiToolTip>
+  );
+
+  const isSortItemChecked = (sortSetting: string) => {
+    return sortSetting === sortSettings ? 'check' : 'empty';
+  };
+
+  const onSortItemClick = (newSortStrategy: SortStrategy, newSortDirection: SortDirection) => {
+    batch(() => {
+      dispatch(setSortStrategy(newSortStrategy));
+      dispatch(setSortDirection(newSortDirection));
+    });
+  };
+
+  console.log(sortSettings);
+
+  const sortItems = [
+    <EuiContextMenuItem
+      key="copy"
+      icon={isSortItemChecked('alphabetical_ascending')}
+      onClick={() => onSortItemClick('alphabetical', 'ascending')}
+      size="s"
+    >
+      Alphabetical ascending
+    </EuiContextMenuItem>,
+    <EuiContextMenuItem
+      key="copy"
+      icon={isSortItemChecked('alphabetical_descending')}
+      onClick={() => onSortItemClick('alphabetical', 'descending')}
+      size="s"
+    >
+      Alphabetical descending
+    </EuiContextMenuItem>,
+    <EuiContextMenuItem
+      key="copy"
+      icon={isSortItemChecked('doc_count_ascending')}
+      onClick={() => onSortItemClick('doc_count', 'ascending')}
+      size="s"
+    >
+      Doc count ascending
+    </EuiContextMenuItem>,
+    <EuiContextMenuItem
+      key="copy"
+      icon={isSortItemChecked('doc_count_descending')}
+      onClick={() => onSortItemClick('doc_count', 'descending')}
+      size="s"
+    >
+      Doc count descending
+    </EuiContextMenuItem>,
+  ];
 
   return (
     <>
@@ -111,8 +194,8 @@ export const OptionsListPopover = ({ width, updateSearchString }: OptionsListPop
                   }
                 />
               </EuiFlexItem>
-              <EuiFlexItem grow={false}>
-                {invalidSelections && invalidSelections.length > 0 && (
+              {invalidSelections && invalidSelections.length > 0 && (
+                <EuiFlexItem grow={false}>
                   <EuiToolTip
                     content={OptionsListStrings.popover.getInvalidSelectionsTooltip(
                       invalidSelections.length
@@ -122,7 +205,16 @@ export const OptionsListPopover = ({ width, updateSearchString }: OptionsListPop
                       {invalidSelections.length}
                     </EuiBadge>
                   </EuiToolTip>
-                )}
+                </EuiFlexItem>
+              )}
+              <EuiFlexItem grow={false}>
+                <EuiPopover
+                  button={sortPopoverButton}
+                  isOpen={isSortPopoverOpen}
+                  closePopover={() => setIsSortPopoverOpen(false)}
+                >
+                  <EuiContextMenuPanel size="s" items={sortItems} />
+                </EuiPopover>
               </EuiFlexItem>
               <EuiFlexItem grow={false}>
                 <EuiToolTip

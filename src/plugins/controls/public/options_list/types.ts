@@ -15,10 +15,16 @@ interface SearchString {
   valid: boolean;
 }
 
+export type SortStrategy = 'alphabetical' | 'doc_count';
+
+export type SortDirection = 'ascending' | 'descending';
+
 // Component state is only used by public components.
 export interface OptionsListComponentState {
   field?: OptionsListField;
   totalCardinality?: number;
+  sortStrategy?: SortStrategy;
+  sortDirection?: SortDirection;
   availableOptions?: string[];
   invalidSelections?: string[];
   validSelections?: string[];
