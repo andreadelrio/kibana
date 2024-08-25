@@ -3,7 +3,7 @@
 .linksPanelEditor {
   .linkEditor {
     @include euiFlyout;
-    max-inline-size: $euiSizeXXL * 18; // 40px * 18 = 720px
+    max-inline-size: $euiSizeS * 62.5; // 40px * 18 = 720px
 
     &.in {
       animation: euiFlyoutOpenAnimation $euiAnimSpeedNormal $euiAnimSlightResistance;

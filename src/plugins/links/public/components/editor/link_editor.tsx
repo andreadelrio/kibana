@@ -112,6 +112,7 @@ export const LinkEditor = ({
         <EuiForm component="form" fullWidth>
           <EuiFormRow label={LinksStrings.editor.linkEditor.getLinkTypePickerLabel()}>
             <EuiRadioGroup
+              compressed={true}
               options={linkTypes}
               idSelected={selectedLinkType}
               onChange={(id) => {
@@ -130,6 +131,7 @@ export const LinkEditor = ({
           />
           <EuiFormRow label={LinksStrings.editor.linkEditor.getLinkTextLabel()}>
             <EuiFieldText
+              compressed={true}
               placeholder={
                 (linkDestination ? defaultLinkLabel : '') ||
                 LinksStrings.editor.linkEditor.getLinkTextPlaceholder()

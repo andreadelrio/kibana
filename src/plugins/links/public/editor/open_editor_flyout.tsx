@@ -136,7 +136,7 @@ export async function openEditorFlyout({
       ),
       {
         id: flyoutId,
-        maxWidth: 720,
+        maxWidth: 500,
         ownFocus: true,
         onClose: onCancel,
         outsideClickCloses: false,

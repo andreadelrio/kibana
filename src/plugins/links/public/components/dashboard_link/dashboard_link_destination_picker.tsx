@@ -118,6 +118,7 @@ export const DashboardLinkDestinationPicker = ({
   return (
     <EuiComboBox
       {...other}
+      compressed={true}
       async
       fullWidth
       className={'linksDashboardPicker'}

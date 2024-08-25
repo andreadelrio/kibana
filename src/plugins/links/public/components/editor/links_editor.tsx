@@ -184,6 +184,7 @@ const LinksEditor = ({
         <EuiForm fullWidth>
           <EuiFormRow label={LinksStrings.editor.panelEditor.getLayoutSettingsTitle()}>
             <EuiButtonGroup
+              isFullWidth={true}
               options={layoutOptions}
               buttonSize="compressed"
               idSelected={currentLayout}
