@@ -40,7 +40,7 @@ export const LinksStrings = {
       }),
     getCancelButtonLabel: () =>
       i18n.translate('links.editor.cancelButtonLabel', {
-        defaultMessage: 'Close',
+        defaultMessage: 'Cancel',
       }),
     panelEditor: {
       getLinksTitle: () =>
@@ -57,7 +57,7 @@ export const LinksStrings = {
         }),
       getCreateFlyoutTitle: () =>
         i18n.translate('links.panelEditor.createFlyoutTitle', {
-          defaultMessage: 'Create links panel',
+          defaultMessage: 'Add links panel',
         }),
       getEditFlyoutTitle: () =>
         i18n.translate('links.panelEditor.editFlyoutTitle', {

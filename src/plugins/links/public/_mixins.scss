@@ -34,5 +34,5 @@
   flex-direction: column;
   border-left: $euiBorderThin;
   background: $euiColorEmptyShade;
-  min-width: ($euiSizeXL * 13) + $euiSizeS; // 424px
+  min-width: ($euiSizeS * 62.5) // 500px
 }

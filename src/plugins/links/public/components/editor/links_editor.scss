@@ -3,7 +3,7 @@
 .linksPanelEditor {
   .linkEditor {
     @include euiFlyout;
-    max-inline-size: $euiSizeS * 62.5; // 40px * 18 = 720px
+    max-inline-size: $euiSizeS * 40; // 40px * 18 = 720px
 
     &.in {
       animation: euiFlyoutOpenAnimation $euiAnimSpeedNormal $euiAnimSlightResistance;
@@ -40,6 +40,7 @@
 .linksPanelEditorLink {
   padding: $euiSizeXS $euiSizeS;
   color: $euiTextColor;
+  position: relative;
 
   .linksPanelEditorLinkText {
     flex: 1;
@@ -62,12 +63,15 @@
     opacity: 0;
     visibility: hidden;
     transition: visibility $euiAnimSpeedNormal, opacity $euiAnimSpeedNormal;
+    position: absolute;
+    right: $euiSizeXS;
   }
 
   &:hover, &:focus-within {
     .links_hoverActions {
       opacity: 1;
       visibility: visible;
+      background-color: $euiColorEmptyShade;
     }
   }
 }

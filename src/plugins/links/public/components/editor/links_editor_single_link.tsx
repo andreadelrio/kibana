@@ -43,6 +43,7 @@ export const LinksEditorSingleLink = ({
         <EuiFlexItem grow={false}>
           <EuiIcon
             type={link.error ? 'warning' : LinkInfo[link.type].icon}
+            size="s"
             color={link.error ? 'warning' : 'text'}
             aria-label={
               link.error
@@ -105,8 +106,8 @@ export const LinksEditorSingleLink = ({
           <LinkLabel />
         </EuiFlexItem>
 
-        <EuiFlexItem grow={false}>
-          <EuiFlexGroup gutterSize="none" responsive={false} className="links_hoverActions">
+        <div className="links_hoverActions">
+          <EuiFlexGroup gutterSize="none" responsive={false}>
             <EuiFlexItem>
               <EuiToolTip content={LinksStrings.editor.getEditLinkTitle()}>
                 <EuiButtonIcon
@@ -131,7 +132,7 @@ export const LinksEditorSingleLink = ({
               </EuiToolTip>
             </EuiFlexItem>
           </EuiFlexGroup>
-        </EuiFlexItem>
+        </div>
       </EuiFlexGroup>
     </EuiPanel>
   );

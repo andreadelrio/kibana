@@ -246,11 +246,10 @@ const LinksEditor = ({
         </EuiForm>
       </EuiFlyoutBody>
       <EuiFlyoutFooter>
-        <EuiFlexGroup responsive={false} justifyContent="spaceBetween">
+        <EuiFlexGroup gutterSize="m" responsive={false} justifyContent="spaceBetween">
           <EuiFlexItem grow={false}>
             <EuiButtonEmpty
               onClick={onClose}
-              iconType="cross"
               flush="left"
               data-test-subj="links--panelEditor--closeBtn"
             >
@@ -267,6 +266,7 @@ const LinksEditor = ({
                     data-test-subj="links--panelEditor--saveByReferenceTooltip"
                   >
                     <EuiSwitch
+                      compressed={true}
                       label={LinksStrings.editor.panelEditor.getSaveToLibrarySwitchLabel()}
                       checked={saveByReference}
                       disabled={hasZeroLinks}
