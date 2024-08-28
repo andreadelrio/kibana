@@ -180,7 +180,7 @@
     top: 0;
     display: flex;
     justify-content: space-between;
-    padding: 0 $euiSizeL;
+    padding: 0 $euiSizeM;
     flex-wrap: nowrap;
     min-width: 100%;
     z-index: -1;
@@ -188,9 +188,7 @@
   }
 
   .embPanel--dragHandle {
-    .embPanel--dragHandle:hover {
-      cursor: move;
-    }
+    cursor: move;
 
     img {
       pointer-events: all !important;
