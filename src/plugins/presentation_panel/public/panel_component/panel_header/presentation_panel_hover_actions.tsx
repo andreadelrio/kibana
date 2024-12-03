@@ -71,11 +71,12 @@ const QUICK_ACTION_IDS = {
 const ALLOWED_NOTIFICATIONS = ['ACTION_FILTERS_NOTIFICATION'] as const;
 
 const ALL_ROUNDED_CORNERS = `
-  border-radius: ${euiThemeVars.euiBorderRadius};
+  border-radius: ${euiThemeVars.euiSizeXS}; // sharper panels, to-do: replace with EUI Borealis border radius variable
 `;
+
 const TOP_ROUNDED_CORNERS = `
-  border-top-left-radius: ${euiThemeVars.euiBorderRadius};
-  border-top-right-radius: ${euiThemeVars.euiBorderRadius};
+  border-top-left-radius: ${euiThemeVars.euiSizeXS}; // sharper panels, to-do: replace with EUI Borealis border radius variable
+  border-top-right-radius: ${euiThemeVars.euiSizeXS};
   border-bottom: 0px;
 `;
 
@@ -473,7 +474,6 @@ export const PresentationPanelHoverActions = ({
         ''
       )}`}
       css={css`
-        border-radius: ${euiThemeVars.euiBorderRadius};
         position: relative;
         height: 100%;
 
@@ -483,6 +483,7 @@ export const PresentationPanelHoverActions = ({
               outline: ${viewMode === 'edit' ? DASHED_OUTLINE : SOLID_OUTLINE};
             `
             : ''}
+          border-radius: calc(${euiThemeVars.euiSizeXS} * .5); // sharper panels, to-do: replace with EUI Borealis border radius variable
         }
 
         .embPanel__hoverActions {

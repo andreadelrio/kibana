@@ -19,12 +19,16 @@
     flex: 1 1 100%;
     z-index: 1;
     min-height: 0; // Absolute must for Firefox to scroll contents
-    border-radius: $euiBorderRadius;
+    border-radius: $euiSizeXS * .5; // sharper panels, to-do: replace with EUI Borealis border radius variable
     overflow: hidden;
 
     &[data-error] {
       display: none;
     }
+  }
+
+  .lnsExpressionRenderer {
+    border-radius: $euiSizeXS * .5; // sharper panels, to-do: replace with EUI Borealis border radius variable
   }
 
   .embPanel__content--hidden {
@@ -48,13 +52,13 @@
 }
 
 .embPanel__header + .embPanel__content {
-  border-radius: 0;
-  border-bottom-left-radius: $euiBorderRadius;
-  border-bottom-right-radius: $euiBorderRadius;
+  border-radius: 0; 
+  border-bottom-left-radius: $euiSizeXS * .5; // sharper panels, to-do: replace with EUI Borealis border radius variable
+  border-bottom-right-radius: $euiSizeXS * .5; // sharper panels, to-do: replace with EUI Borealis border radius variable
 }
 
 .embPanel__title {
-  @include euiTitle('xxxs');
+  @include euiTitle('xxs');
   overflow: hidden;
   line-height: 1.5;
   flex-grow: 1;
@@ -80,7 +84,7 @@
 
   .embPanel__titleText {
     @include euiTextTruncate;
-    font-weight: $euiFontWeightBold;
+    font-weight: $euiFontWeightSemiBold;
   }
 
   .embPanel__placeholderTitleText {

@@ -129,7 +129,7 @@
    * Overwrites red coloring that comes from this library by default.
    */
   &.react-grid-placeholder {
-    border-radius: $euiBorderRadius;
+    border-radius: $euiSizeXS * .5; // sharper panels, to-do: replace with EUI Borealis border radius variable
     background: $euiColorWarning;
   }
 }
