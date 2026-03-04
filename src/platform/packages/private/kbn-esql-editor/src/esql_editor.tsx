@@ -58,7 +58,6 @@ import { QuerySource } from '@kbn/esql-types';
 import { useLookupIndexCommand } from './lookup_join';
 import { useFieldsBrowser } from './resource_browser/use_fields_browser';
 import { EditorFooter } from './editor_footer';
-import { QuickSearchVisor } from './editor_visor';
 import { ESQLMenu } from './editor_menu';
 import { getTrimmedQuery } from './history_local_storage';
 import { useEsqlEditorActions } from './use_esql_editor_actions';
@@ -704,6 +703,7 @@ const ESQLEditorInternal = function ESQLEditor({
 
   const { editorActions, onClickQueryHistory, onToggleVisor } = useEsqlEditorActions({
     code,
+    isVisorOpen,
     isHistoryOpen,
     isCurrentQueryStarred,
     onUpdateAndSubmitQuery,
@@ -1318,17 +1318,6 @@ const ESQLEditorInternal = function ESQLEditor({
           </EuiFlexItem>
         </div>
       </EuiFlexGroup>
-      {!hideQuickSearch && (
-        <QuickSearchVisor
-          query={code}
-          isSpaceReduced={Boolean(editorIsInline) || measuredEditorWidth < BREAKPOINT_WIDTH}
-          isVisible={isVisorOpen}
-          onUpdateAndSubmitQuery={(newQuery) =>
-            onUpdateAndSubmitQuery(newQuery, QuerySource.QUICK_SEARCH)
-          }
-          onToggleVisor={onToggleVisor}
-        />
-      )}
       {(isHistoryOpen || (isLanguageComponentOpen && editorIsInline)) && (
         <ResizableButton
           onMouseDownResizeHandler={(mouseDownEvent) => {

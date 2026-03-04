@@ -14,6 +14,7 @@ import type { EsqlStarredQueriesService } from './editor_footer/esql_starred_que
 
 interface UseEsqlEditorActionsParams {
   code: string;
+  isVisorOpen: boolean;
   isHistoryOpen: boolean;
   isCurrentQueryStarred: boolean;
   onUpdateAndSubmitQuery: (newQuery: string, source: QuerySource) => void;
@@ -31,6 +32,7 @@ interface UseEsqlEditorActionsParams {
 
 export function useEsqlEditorActions({
   code,
+  isVisorOpen,
   isHistoryOpen,
   isCurrentQueryStarred,
   onUpdateAndSubmitQuery,
@@ -110,6 +112,7 @@ export function useEsqlEditorActions({
       toggleHistory: onToggleHistory,
       toggleStarredQuery: onToggleStarredQuery,
       submitEsqlQuery: onSubmitEsqlQuery,
+      isVisorOpen,
       isHistoryOpen,
       isCurrentQueryStarred,
       canToggleStarredQuery: Boolean(starredQueriesService && trimmedQuery),
@@ -117,6 +120,7 @@ export function useEsqlEditorActions({
     }),
     [
       code,
+      isVisorOpen,
       isCurrentQueryStarred,
       isHistoryOpen,
       onSubmitEsqlQuery,

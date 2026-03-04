@@ -13,6 +13,7 @@ export interface EsqlEditorActions {
   toggleHistory: () => void;
   toggleStarredQuery: () => void;
   submitEsqlQuery: (query: string) => void;
+  isVisorOpen: boolean;
   isHistoryOpen: boolean;
   isCurrentQueryStarred: boolean;
   canToggleStarredQuery: boolean;

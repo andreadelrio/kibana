@@ -10,6 +10,7 @@ import React, { Suspense } from 'react';
 import { EuiButtonIcon, EuiToolTip } from '@elastic/eui';
 import { KibanaContextProvider } from '@kbn/kibana-react-plugin/public';
 import { helpLabel } from '@kbn/esql-editor';
+import type { QuickSearchVisorProps } from '@kbn/esql-editor';
 import { getKibanaServices } from './kibana_services';
 
 const LazyESQLMenu = React.lazy(async () => {
@@ -20,6 +21,11 @@ const LazyESQLMenu = React.lazy(async () => {
 const LazyEsqlEditorActionsProvider = React.lazy(async () => {
   const module = await import('@kbn/esql-editor');
   return { default: module.EsqlEditorActionsProvider };
+});
+
+const LazyVisor = React.lazy(async () => {
+  const module = await import('@kbn/esql-editor');
+  return { default: module.QuickSearchVisor };
 });
 
 const helpPopoverFallback = (
@@ -61,3 +67,19 @@ export const EsqlEditorActionsProvider: React.FC<{ children: React.ReactNode }> 
     <LazyEsqlEditorActionsProvider>{children}</LazyEsqlEditorActionsProvider>
   </Suspense>
 );
+
+export const LazyQuickSearchVisor: React.FC<QuickSearchVisorProps> = (props) => {
+  const deps = getKibanaServices();
+
+  const content = (
+    <Suspense fallback={null}>
+      <LazyVisor {...props} />
+    </Suspense>
+  );
+
+  if (!deps) {
+    return content;
+  }
+
+  return <KibanaContextProvider services={{ ...deps }}>{content}</KibanaContextProvider>;
+};

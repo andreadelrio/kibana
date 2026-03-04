@@ -19,49 +19,33 @@ export const MODE_SELECT_WIDTH_NL = 160;
 // offset by 100px to leave room for the editor chrome above and below.
 // Matches the max-height used by the KQL QueryStringInput textarea.
 export const NL_TEXTAREA_MAX_HEIGHT = 'calc(35vh - 100px)';
-const visorGradientPadding = '1px';
-const visorGradient =
-  'linear-gradient(104.14deg, rgb(97, 162, 255) 18.35%, rgb(138, 130, 232) 51.95%, rgb(216, 70, 187) 88.68%, rgb(255, 39, 165) 112.9%);';
 
 export const visorStyles = (
   euiTheme: EuiThemeComputed,
   comboBoxWidth: number,
   isSpaceReduced: boolean,
-  isVisible: boolean,
   isDarkMode: boolean,
   mode: VisorMode,
   isNlToEsqlEnabled: boolean = false
 ) => {
   const fontSize = euiFontSizeFromScale('xs', euiTheme);
   const modeSelectWidth = mode === VisorMode.KQL ? MODE_SELECT_WIDTH_KQL : MODE_SELECT_WIDTH_NL;
-  const visorBoxShadow = isDarkMode
-    ? '0px 6px 14px 0px rgba(137, 157, 170, 0.2)'
-    : '0px 6px 14px 0px rgba(11, 14, 22, 0.05)';
   const visorInnerPadding = '2px';
-  const totalHeight = `calc(${euiTheme.size.xl} + 2*${visorGradientPadding})`;
 
-  const gradientBoxStyles = {
-    background: visorGradient,
-    padding: visorGradientPadding,
-    borderRadius: `calc(${euiTheme.size.s} + 1px)`,
-    boxShadow: visorBoxShadow,
+  const boxStyles = {
+    border: euiTheme.border.thin,
+    borderRadius: euiTheme.border.radius.small,
   };
 
   return {
     visorContainer: {
       backgroundColor: euiTheme.colors.backgroundBasePlain,
-      width: isSpaceReduced ? '98%' : `calc(${visorWidthPercentage * 100}% )`,
-      margin: isVisible ? `0 auto ${euiTheme.size.base}` : '0 auto 0',
-      height: isVisible ? `${totalHeight}` : '0',
-      opacity: isVisible ? 1 : 0,
-      pointerEvents: isVisible ? ('auto' as const) : ('none' as const),
-      transition: 'all 0.5s cubic-bezier(0.25, 0.1, 0.25, 1)',
     },
     visorWrapper: {
       width: `calc(100% - ${euiTheme.size.xl})`,
     },
     visorGradientBox: {
-      ...gradientBoxStyles,
+      ...boxStyles,
     },
     comboBoxWrapper: {
       background: euiTheme.colors.backgroundBasePlain,
@@ -73,16 +57,16 @@ export const visorStyles = (
       }`,
       overflow: 'hidden',
       ...(!isNlToEsqlEnabled && {
-        borderBottomLeftRadius: euiTheme.size.s,
-        borderTopLeftRadius: euiTheme.size.s,
+        borderBottomLeftRadius: euiTheme.border.radius.small,
+        borderTopLeftRadius: euiTheme.border.radius.small,
       }),
     },
     closeButtonWrapper: {
-      ...gradientBoxStyles,
+      ...boxStyles,
       marginLeft: euiTheme.size.xs,
     },
     closeButton: {
-      borderRadius: euiTheme.size.s,
+      borderRadius: euiTheme.border.radius.small,
       border: 'none',
     },
     separator: {
@@ -106,12 +90,12 @@ export const visorStyles = (
     searchWrapper: css`
       background: ${euiTheme.colors.backgroundBasePlain};
       justify-content: center;
-      border-bottom-right-radius: ${euiTheme.size.s};
-      border-top-right-radius: ${euiTheme.size.s};
+      border-bottom-right-radius: ${euiTheme.border.radius.small};
+      border-top-right-radius: ${euiTheme.border.radius.small};
       padding-right: ${visorInnerPadding};
 
       .euiFormControlLayout--group {
-        border-radius: ${euiTheme.size.s};
+        border-radius: ${euiTheme.border.radius.small};
       }
       .euiFormControlLayout--group::after {
         border: none;
@@ -125,7 +109,7 @@ export const visorStyles = (
       }
 
       .kbnQueryBar__textarea {
-        border-radius: ${euiTheme.size.s} !important;
+        border-radius: ${euiTheme.border.radius.small} !important;
         font-size: ${fontSize} !important;
         padding-left: ${euiTheme.size.s} !important;
         padding-top: ${euiTheme.size.s} !important;
@@ -139,8 +123,8 @@ export const visorStyles = (
     `,
     modeSelectWrapper: css`
       background: ${euiTheme.colors.backgroundBasePlain};
-      border-bottom-left-radius: ${euiTheme.size.s};
-      border-top-left-radius: ${euiTheme.size.s};
+      border-bottom-left-radius: ${euiTheme.border.radius.small};
+      border-top-left-radius: ${euiTheme.border.radius.small};
       padding-left: ${visorInnerPadding};
       flex-shrink: 0;
       flex-grow: 0;
@@ -168,8 +152,8 @@ export const visorStyles = (
     nlInputWrapper: css`
       background: ${euiTheme.colors.backgroundBasePlain};
       height: ${euiTheme.size.xl};
-      border-bottom-right-radius: ${euiTheme.size.s};
-      border-top-right-radius: ${euiTheme.size.s};
+      border-bottom-right-radius: ${euiTheme.border.radius.small};
+      border-top-right-radius: ${euiTheme.border.radius.small};
       padding-right: ${visorInnerPadding};
       overflow: visible;
       position: relative;
@@ -184,7 +168,7 @@ export const visorStyles = (
       resize: none;
       overflow: hidden;
       min-height: ${euiTheme.size.xl};
-      border-radius: ${euiTheme.size.s} !important;
+      border-radius: ${euiTheme.border.radius.small} !important;
       position: relative;
       z-index: ${euiTheme.levels.flyout};
       &:focus,

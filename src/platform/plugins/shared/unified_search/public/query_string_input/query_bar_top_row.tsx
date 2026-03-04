@@ -29,6 +29,8 @@ import {
   ESQLLangEditor,
   ESQLMenu,
   EsqlEditorActionsProvider,
+  LazyQuickSearchVisor,
+  useEsqlEditorActions,
   type ESQLEditorProps,
 } from '@kbn/esql/public';
 import type { EuiFieldText, EuiIconProps, OnRefreshProps, UseEuiTheme } from '@elastic/eui';
@@ -834,13 +836,16 @@ export const QueryBarTopRow = React.memo(
       }
 
       return (
-        <EuiFlexItem grow={false}>
+        <EuiFlexItem
+          grow={false}
+          css={isQueryLangSelected ? css`margin-left: auto;` : undefined}
+        >
           <NoDataPopover storage={storage} showNoDataPopover={props.indicateNoData}>
             <EuiFlexGroup alignItems="center" responsive={false} gutterSize="s">
               {isQueryLangSelected ? (
                 <>
-                  {shouldRenderUpdateButton() ? button : null}
                   {shouldRenderDatePicker() ? renderDatePicker() : null}
+                  {shouldRenderUpdateButton() ? button : null}
                 </>
               ) : (
                 <>
@@ -917,16 +922,38 @@ export const QueryBarTopRow = React.memo(
 
     function renderEsqlMenuPopover() {
       return (
+        <EuiFlexItem grow={false}>
+          <ESQLMenu onESQLDocsFlyoutVisibilityChanged={props.onESQLDocsFlyoutVisibilityChanged} />
+        </EuiFlexItem>
+      );
+    }
+
+    function EsqlVisor() {
+      const editorActions = useEsqlEditorActions();
+      if (!editorActions) return null;
+      const isOpen = editorActions.isVisorOpen;
+      return (
         <EuiFlexItem
-          grow={false}
+          grow={isOpen}
           css={css`
-            margin-left: auto;
-            @media (min-width: ${euiTheme.breakpoint.xl}px) {
-              order: 1;
+            overflow: hidden;
+            max-width: ${isOpen ? '100%' : '0'};
+            opacity: ${isOpen ? 1 : 0};
+            transition: ${isOpen
+              ? 'max-width 0.2s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1)'
+              : 'max-width 0.15s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.12s cubic-bezier(0.32, 0.72, 0, 1)'};
+
+            @media (prefers-reduced-motion: reduce) {
+              transition: none;
             }
           `}
         >
-          <ESQLMenu onESQLDocsFlyoutVisibilityChanged={props.onESQLDocsFlyoutVisibilityChanged} />
+          <LazyQuickSearchVisor
+            query={editorActions.currentQuery}
+            isVisible={isOpen}
+            onUpdateAndSubmitQuery={editorActions.submitEsqlQuery}
+            onToggleVisor={editorActions.toggleVisor}
+          />
         </EuiFlexItem>
       );
     }
@@ -1061,22 +1088,16 @@ export const QueryBarTopRow = React.memo(
           (isQueryLangSelected ? (
             <EsqlEditorActionsProvider>
               <EuiFlexGroup {...queryBarFlexGroupProps}>
+                {renderEsqlMenuPopover()}
+                <EsqlVisor />
                 {props.dataViewPickerOverride || renderDataViewsPicker()}
-                {renderDatePickerWithUpdateBtn()}
                 {/* Optional wrapper for the ES|QL controls elements */}
                 {Boolean(props.esqlVariablesConfig?.controlsWrapper) && (
-                  <EuiFlexItem
-                    grow={false}
-                    css={css`
-                      @media (max-width: ${euiTheme.breakpoint.xl}px) {
-                        order: 1;
-                      }
-                    `}
-                  >
+                  <EuiFlexItem grow={false}>
                     {props.esqlVariablesConfig?.controlsWrapper}
                   </EuiFlexItem>
                 )}
-                {renderEsqlMenuPopover()}
+                {renderDatePickerWithUpdateBtn()}
               </EuiFlexGroup>
               {!shouldShowDatePickerAsBadge() && props.filterBar}
               {renderTextLangEditor()}

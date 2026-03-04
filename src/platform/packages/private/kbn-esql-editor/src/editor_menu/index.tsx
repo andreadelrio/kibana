@@ -13,7 +13,6 @@ import { isMac } from '@kbn/shared-ux-utility';
 import { StardustWrapper } from '@kbn/content-management-favorites-public';
 import { useEsqlEditorActions } from '../editor_actions_context';
 import { searchPlaceholder } from '../editor_visor';
-import { MagnifyGradientIcon } from './magnify_gradient_icon';
 import {
   addStarredQueryLabel,
   helpLabel,
@@ -39,6 +38,7 @@ export function ESQLMenu({
   const { euiTheme } = useEuiTheme();
   const commandKey = isMac ? '⌘' : 'Ctrl';
   const onToggleVisor = editorActions?.toggleVisor;
+  const isVisorOpen = Boolean(editorActions?.isVisorOpen);
   const onToggleHistory = editorActions?.toggleHistory;
   const onToggleStarredQuery = editorActions?.toggleStarredQuery;
   const historyLabel = editorActions?.isHistoryOpen ? hideHistoryLabel : showHistoryLabel;
@@ -67,23 +67,6 @@ export function ESQLMenu({
         padding: ${euiTheme.size.xs};
       `}
     >
-      <EuiFlexItem grow={false}>
-        <EuiToolTip
-          position="top"
-          content={searchTooltipLabel(commandKey)}
-          disableScreenReaderOutput
-        >
-          <EuiButtonIcon
-            iconType={MagnifyGradientIcon}
-            size="xs"
-            aria-label={searchPlaceholder}
-            onClick={onToggleVisor}
-            isDisabled={!onToggleVisor}
-            data-test-subj="esql-menu-button"
-            color="text"
-          />
-        </EuiToolTip>
-      </EuiFlexItem>
       {!hideHistory && (
         <EuiFlexItem grow={false}>
           <EuiToolTip position="top" content={starredQueryLabel} disableScreenReaderOutput>
@@ -134,6 +117,24 @@ export function ESQLMenu({
         >
           <LazyHelpPopover onESQLDocsFlyoutVisibilityChanged={onESQLDocsFlyoutVisibilityChanged} />
         </Suspense>
+      </EuiFlexItem>
+      <EuiFlexItem grow={false}>
+        <EuiToolTip
+          position="top"
+          content={searchTooltipLabel(commandKey)}
+          disableScreenReaderOutput
+        >
+          <EuiButtonIcon
+            iconType="search"
+            size="xs"
+            aria-label={searchPlaceholder}
+            onClick={onToggleVisor}
+            isDisabled={!onToggleVisor}
+            display={isVisorOpen ? 'base' : 'empty'}
+            data-test-subj="esql-menu-button"
+            color={isVisorOpen ? "primary" : "text"}
+          />
+        </EuiToolTip>
       </EuiFlexItem>
     </EuiFlexGroup>
   );

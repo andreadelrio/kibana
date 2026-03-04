@@ -239,7 +239,6 @@ export function QuickSearchVisor({
     euiTheme,
     comboBoxWidth,
     Boolean(isSpaceReduced),
-    isVisible,
     isDarkMode,
     visorMode,
     isNlToEsqlEnabled
