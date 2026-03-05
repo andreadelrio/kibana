@@ -31,6 +31,8 @@ import {
   EsqlEditorActionsProvider,
   LazyQuickSearchVisor,
   useEsqlEditorActions,
+  DesignPanel,
+  useDesignPanel,
   type ESQLEditorProps,
 } from '@kbn/esql/public';
 import type { EuiFieldText, EuiIconProps, OnRefreshProps, UseEuiTheme } from '@elastic/eui';
@@ -676,7 +678,10 @@ export const QueryBarTopRow = React.memo(
       const component = getWrapperWithTooltip(datePicker, enableTooltip, props.query);
 
       return (
-        <EuiFlexItem className={wrapperClasses} css={styles.datePickerWrapper}>
+        <EuiFlexItem
+          className={wrapperClasses}
+          css={[styles.datePickerWrapper, isQueryLangSelected && { maxWidth: 300 }]}
+        >
           {component}
         </EuiFlexItem>
       );
@@ -928,36 +933,6 @@ export const QueryBarTopRow = React.memo(
       );
     }
 
-    function EsqlVisor() {
-      const editorActions = useEsqlEditorActions();
-      if (!editorActions) return null;
-      const isOpen = editorActions.isVisorOpen;
-      return (
-        <EuiFlexItem
-          grow={isOpen}
-          css={css`
-            overflow: hidden;
-            max-width: ${isOpen ? '100%' : '0'};
-            opacity: ${isOpen ? 1 : 0};
-            transition: ${isOpen
-              ? 'max-width 0.2s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1)'
-              : 'max-width 0.15s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.12s cubic-bezier(0.32, 0.72, 0, 1)'};
-
-            @media (prefers-reduced-motion: reduce) {
-              transition: none;
-            }
-          `}
-        >
-          <LazyQuickSearchVisor
-            query={editorActions.currentQuery}
-            isVisible={isOpen}
-            onUpdateAndSubmitQuery={editorActions.submitEsqlQuery}
-            onToggleVisor={editorActions.toggleVisor}
-          />
-        </EuiFlexItem>
-      );
-    }
-
     function renderQueryInput() {
       const filterButtonGroup = !renderFilterMenuOnly() && renderFilterButtonGroup();
       const queryInput = shouldRenderQueryInput() && (
@@ -1086,22 +1061,24 @@ export const QueryBarTopRow = React.memo(
         />
         {!isScreenshotMode &&
           (isQueryLangSelected ? (
-            <EsqlEditorActionsProvider>
-              <EuiFlexGroup {...queryBarFlexGroupProps}>
-                {renderEsqlMenuPopover()}
-                <EsqlVisor />
-                {props.dataViewPickerOverride || renderDataViewsPicker()}
-                {/* Optional wrapper for the ES|QL controls elements */}
+            <DesignPanel>
+              <EsqlEditorActionsProvider>
+                <EuiFlexGroup {...queryBarFlexGroupProps}>
+                  {renderEsqlMenuPopover()}
+                  <EsqlVisor />
+                  {props.dataViewPickerOverride || renderDataViewsPicker()}
+                  {renderDatePickerWithUpdateBtn()}
+                </EuiFlexGroup>
                 {Boolean(props.esqlVariablesConfig?.controlsWrapper) && (
-                  <EuiFlexItem grow={false}>
-                    {props.esqlVariablesConfig?.controlsWrapper}
-                  </EuiFlexItem>
+                  <EsqlControlsWrapper
+                    controlsWrapper={props.esqlVariablesConfig?.controlsWrapper}
+                    disableExternalPadding={props.disableExternalPadding}
+                  />
                 )}
-                {renderDatePickerWithUpdateBtn()}
-              </EuiFlexGroup>
-              {!shouldShowDatePickerAsBadge() && props.filterBar}
-              {renderTextLangEditor()}
-            </EsqlEditorActionsProvider>
+                {!shouldShowDatePickerAsBadge() && props.filterBar}
+                {renderTextLangEditor()}
+              </EsqlEditorActionsProvider>
+            </DesignPanel>
           ) : (
             <>
               <EuiFlexGroup {...queryBarFlexGroupProps}>
@@ -1129,6 +1106,60 @@ export const QueryBarTopRow = React.memo(
     return isQueryEqual && shallowEqual(prevProps, nextProps);
   }
 ) as GenericQueryBarTopRow;
+
+function EsqlVisor() {
+  const editorActions = useEsqlEditorActions();
+  if (!editorActions) return null;
+  const isOpen = editorActions.isVisorOpen;
+  return (
+    <EuiFlexItem
+      grow={isOpen}
+      css={css`
+        overflow: hidden;
+        max-width: ${isOpen ? '100%' : '0'};
+        opacity: ${isOpen ? 1 : 0};
+        transition: ${isOpen
+          ? 'max-width 0.2s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.2s cubic-bezier(0.32, 0.72, 0, 1)'
+          : 'max-width 0.15s cubic-bezier(0.32, 0.72, 0, 1), opacity 0.12s cubic-bezier(0.32, 0.72, 0, 1)'};
+
+        @media (prefers-reduced-motion: reduce) {
+          transition: none;
+        }
+      `}
+    >
+      <LazyQuickSearchVisor
+        query={editorActions.currentQuery}
+        isVisible={isOpen}
+        onUpdateAndSubmitQuery={editorActions.submitEsqlQuery}
+        onToggleVisor={editorActions.toggleVisor}
+      />
+    </EuiFlexItem>
+  );
+}
+
+function EsqlControlsWrapper({
+  controlsWrapper,
+  disableExternalPadding,
+}: {
+  controlsWrapper: React.ReactNode;
+  disableExternalPadding?: boolean;
+}) {
+  const { euiTheme } = useEuiTheme();
+  const { showControls, visibleControlCount } = useDesignPanel();
+  return (
+    <div
+      css={css`
+        padding: ${!disableExternalPadding ? `0 ${euiTheme.size.s} ${euiTheme.size.s}` : 0};
+        ${!showControls && 'visibility: hidden; height: 0; overflow: hidden;'}
+        .controlGroup > li:nth-child(n + ${visibleControlCount + 1}) {
+          display: none;
+        }
+      `}
+    >
+      {controlsWrapper}
+    </div>
+  );
+}
 
 const inputStringStyles = {
   datePickerWrapper: ({ euiTheme }: UseEuiTheme) =>

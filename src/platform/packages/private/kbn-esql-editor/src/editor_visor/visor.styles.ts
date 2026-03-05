@@ -10,6 +10,7 @@ import type { EuiThemeComputed } from '@elastic/eui';
 import { euiFontSizeFromScale } from '@elastic/eui';
 import { css } from '@emotion/react';
 import { VisorMode } from './mode_selector';
+import type { VisorBorderStyle } from '../design_panel';
 
 export const visorWidthPercentage = 0.5;
 export const dropdownWidthPercentage = 0.35;
@@ -26,14 +27,20 @@ export const visorStyles = (
   isSpaceReduced: boolean,
   isDarkMode: boolean,
   mode: VisorMode,
-  isNlToEsqlEnabled: boolean = false
+  isNlToEsqlEnabled: boolean = false,
+  visorBorderStyle: VisorBorderStyle = 'default'
 ) => {
   const fontSize = euiFontSizeFromScale('xs', euiTheme);
   const modeSelectWidth = mode === VisorMode.KQL ? MODE_SELECT_WIDTH_KQL : MODE_SELECT_WIDTH_NL;
   const visorInnerPadding = '2px';
 
+  const borderValue =
+    visorBorderStyle === 'borderStrongPrimary'
+      ? `${euiTheme.border.width.thin} solid ${euiTheme.colors.borderStrongPrimary}`
+      : euiTheme.border.thin;
+
   const boxStyles = {
-    border: euiTheme.border.thin,
+    border: borderValue,
     borderRadius: euiTheme.border.radius.small,
   };
 
@@ -176,6 +183,13 @@ export const visorStyles = (
         box-shadow: none !important;
         outline: none !important;
       }
+    `,
+    internalCloseButton: css`
+      border: none;
+      background: ${euiTheme.colors.backgroundBasePlain};
+      border-top-right-radius: ${euiTheme.border.radius.small};
+      border-bottom-right-radius: ${euiTheme.border.radius.small};
+      flex-shrink: 0;
     `,
     searchFieldStyles: css`
       box-shadow: none;

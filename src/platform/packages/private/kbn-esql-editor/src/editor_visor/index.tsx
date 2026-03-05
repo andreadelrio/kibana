@@ -28,6 +28,7 @@ import { NoConnectorMessage } from './no_connector_message';
 import { NLInput } from './nl_input';
 import { visorStyles, visorWidthPercentage, dropdownWidthPercentage } from './visor.styles';
 import type { ESQLEditorDeps } from '../types';
+import { useDesignPanel } from '../design_panel';
 
 export { VisorMode } from './mode_selector';
 
@@ -235,13 +236,16 @@ export function QuickSearchVisor({
     return calculateWidthFromCharCount(labelLength, { maxWidth: maxComboBoxWidth });
   }, [selectedSources]);
 
+  const { hideOuterCloseButton, hideInternalCloseButton, visorBorderStyle } = useDesignPanel();
+
   const styles = visorStyles(
     euiTheme,
     comboBoxWidth,
     Boolean(isSpaceReduced),
     isDarkMode,
     visorMode,
-    isNlToEsqlEnabled
+    isNlToEsqlEnabled,
+    visorBorderStyle
   );
 
   if (!KQLComponent) {
@@ -258,7 +262,10 @@ export function QuickSearchVisor({
       data-test-subj="ESQLEditor-quick-search-visor"
       {...(!isVisible && { inert: '' })}
     >
-      <EuiFlexItem grow={false} css={styles.visorWrapper}>
+      <EuiFlexItem
+        grow={false}
+        css={[styles.visorWrapper, hideOuterCloseButton && { width: '100%' }]}
+      >
         <EuiFlexGroup
           gutterSize="none"
           alignItems="center"
@@ -330,20 +337,39 @@ export function QuickSearchVisor({
               )}
             </EuiFlexItem>
           )}
+          {!hideInternalCloseButton && (
+            <>
+              <EuiFlexItem grow={false} css={styles.separator} />
+              <EuiFlexItem grow={false}>
+                <EuiButtonIcon
+                  color="text"
+                  display="empty"
+                  size="s"
+                  iconSize="m"
+                  onClick={onToggleVisor}
+                  iconType="cross"
+                  aria-label={closeButtonAriaLabel}
+                  css={styles.internalCloseButton}
+                />
+              </EuiFlexItem>
+            </>
+          )}
         </EuiFlexGroup>
       </EuiFlexItem>
-      <EuiFlexItem grow={false} css={styles.closeButtonWrapper}>
-        <EuiButtonIcon
-          color="text"
-          display="base"
-          size="s"
-          iconSize="m"
-          onClick={onToggleVisor}
-          iconType="cross"
-          aria-label={closeButtonAriaLabel}
-          css={styles.closeButton}
-        />
-      </EuiFlexItem>
+      {!hideOuterCloseButton && (
+        <EuiFlexItem grow={false} css={styles.closeButtonWrapper}>
+          <EuiButtonIcon
+            color="text"
+            display="base"
+            size="s"
+            iconSize="m"
+            onClick={onToggleVisor}
+            iconType="cross"
+            aria-label={closeButtonAriaLabel}
+            css={styles.closeButton}
+          />
+        </EuiFlexItem>
+      )}
     </EuiFlexGroup>
   );
 }

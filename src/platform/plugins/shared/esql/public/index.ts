@@ -12,7 +12,7 @@ import { EsqlPlugin, type EsqlPluginStart } from './plugin';
 
 export { ESQLLangEditor } from './create_editor';
 export { ESQLMenu, EsqlEditorActionsProvider, LazyQuickSearchVisor } from './lazy_esql_menu';
-export { useEsqlEditorActions } from '@kbn/esql-editor';
+export { useEsqlEditorActions, DesignPanel, useDesignPanel } from '@kbn/esql-editor';
 export { useESQLQueryStats } from './hooks/use_esql_query_stats';
 export type { ESQLEditorProps, DataErrorsControl, QuickSearchVisorProps } from '@kbn/esql-editor';
 export type { EsqlPluginStart };
