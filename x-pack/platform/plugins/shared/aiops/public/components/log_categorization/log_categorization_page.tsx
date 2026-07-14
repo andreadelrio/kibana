@@ -369,8 +369,10 @@ export const LogCategorizationPage: FC = () => {
               label={i18n.translate('xpack.aiops.logCategorization.categoryFieldSelect', {
                 defaultMessage: 'Category field',
               })}
+              display="rowCompressed"
             >
               <EuiComboBox
+                compressed
                 isDisabled={loading === true}
                 options={fields}
                 onChange={onFieldChange}
@@ -385,6 +387,7 @@ export const LogCategorizationPage: FC = () => {
           <EuiFlexItem grow={false} css={{ marginTop: 'auto' }}>
             {loading === false ? (
               <EuiButton
+                size="s"
                 disabled={selectedField === undefined}
                 onClick={() => {
                   loadCategories();
@@ -398,6 +401,7 @@ export const LogCategorizationPage: FC = () => {
               </EuiButton>
             ) : (
               <EuiButton
+                size="s"
                 data-test-subj="aiopsLogCategorizationPageCancelButton"
                 onClick={() => cancelRequest()}
               >
