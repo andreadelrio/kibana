@@ -17,14 +17,14 @@ const VERBANA_VARIANT_ID = 'verbana';
 const LINBANA_VARIANT_ID = 'linbana';
 const ATTBANA_VARIANT_ID = 'attbana';
 
-const DARK_SHELL_SHADOW =
-  '0 0 0 1px rgba(255, 255, 255, 0.06), 0px 2px 8px rgba(0, 0, 0, 0.35)';
+const DARK_SHELL_SHADOW = '0 0 0 1px rgba(255, 255, 255, 0.06), 0px 2px 8px rgba(0, 0, 0, 0.35)';
 
 /** Bespoke exploration colors — not EUI tokens. Resolved by the dev-toolbar color theme toggle. */
 export interface DesignExplorationSurfacePalette {
   canvas: string;
   surface?: string;
   surfaceNav?: string;
+  dashboard?: string;
   shellShadow?: string;
 }
 
@@ -108,6 +108,7 @@ const NIRBANA_BESPOKE_COLORS: Record<ColorMode, DesignExplorationBespokePalette>
   },
   DARK: {
     ...INTERBANA_BESPOKE_COLORS.DARK,
+    dashboard: '#10141a',
   },
 };
 
@@ -118,6 +119,7 @@ const TARGET_BESPOKE_COLORS: Record<ColorMode, DesignExplorationBespokePalette> 
   DARK: {
     // Keep the exploration canvas; other dark surfaces use Borealis in the variant styles.
     canvas: '#09121E',
+    dashboard: '#0E1620',
   },
 };
 
@@ -125,13 +127,13 @@ const BESPOKE_COLORS_BY_VARIANT: Record<
   string,
   Partial<Record<ColorMode, DesignExplorationBespokePalette>>
 > = {
-    [INTERBANA_VARIANT_ID]: INTERBANA_BESPOKE_COLORS,
-    [NIRBANA_VARIANT_ID]: NIRBANA_BESPOKE_COLORS,
-    [TARGET_VARIANT_ID]: TARGET_BESPOKE_COLORS,
-    [VERBANA_VARIANT_ID]: VERBANA_BESPOKE_COLORS,
-    [LINBANA_VARIANT_ID]: LINBANA_BESPOKE_COLORS,
-    [ATTBANA_VARIANT_ID]: ATTBANA_BESPOKE_COLORS,
-  };
+  [INTERBANA_VARIANT_ID]: INTERBANA_BESPOKE_COLORS,
+  [NIRBANA_VARIANT_ID]: NIRBANA_BESPOKE_COLORS,
+  [TARGET_VARIANT_ID]: TARGET_BESPOKE_COLORS,
+  [VERBANA_VARIANT_ID]: VERBANA_BESPOKE_COLORS,
+  [LINBANA_VARIANT_ID]: LINBANA_BESPOKE_COLORS,
+  [ATTBANA_VARIANT_ID]: ATTBANA_BESPOKE_COLORS,
+};
 
 const getBespokePalette = (
   variantId: string,
@@ -154,6 +156,7 @@ export const resolveDesignExplorationKnobTokensForColorMode = (
     ...(palette.canvas !== undefined && { canvas: palette.canvas }),
     ...(palette.surface !== undefined && { surface: palette.surface }),
     ...(palette.surfaceNav !== undefined && { surfaceNav: palette.surfaceNav }),
+    ...(palette.dashboard !== undefined && { dashboard: palette.dashboard }),
     ...(palette.shellShadow !== undefined && { shellShadow: palette.shellShadow }),
   };
 };

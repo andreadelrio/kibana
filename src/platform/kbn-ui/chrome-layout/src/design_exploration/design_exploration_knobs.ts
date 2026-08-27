@@ -12,6 +12,7 @@ import {
   resolveDesignExplorationBespokeCssVars,
   resolveDesignExplorationKnobTokensForColorMode,
 } from './design_exploration_bespoke_colors';
+import { getDesignExplorationColorOverrides } from './design_exploration_color_overrides';
 
 export const DESIGN_EXPLORATION_KNOBS_SESSION_KEY = 'dev.core.chrome.designExploration.knobs';
 
@@ -107,6 +108,8 @@ export interface DesignExplorationKnobTokens {
   canvas: string;
   surface: string;
   surfaceNav: string;
+  /** Field behind dashboard panels. `transparent` inherits the chrome canvas. */
+  dashboard: string;
   padding: number;
   gutter: number;
   panelPadding: number;
@@ -122,6 +125,7 @@ export const DESIGN_EXPLORATION_KNOB_CSS_VAR_NAMES = {
   canvas: '--design-exploration-canvas',
   surface: '--design-exploration-surface',
   surfaceNav: '--design-exploration-surface-nav',
+  dashboard: '--design-exploration-dashboard',
   padding: '--design-exploration-padding',
   /** Unitless — consumed by `--kbnGridGutterSize` (grid multiplies by 1px itself). */
   gridGutter: '--design-exploration-grid-gutter',
@@ -193,8 +197,7 @@ const steppedKnobMultiplier = (knobId: DesignExplorationSteppedKnobId, knobValue
 
 const scalePx = (value: number, multiplier: number) => `${Math.round(value * multiplier)}px`;
 
-const scaleUnitless = (value: number, multiplier: number) =>
-  `${Math.round(value * multiplier)}`;
+const scaleUnitless = (value: number, multiplier: number) => `${Math.round(value * multiplier)}`;
 
 const parseHexColor = (color: string): [number, number, number] | undefined => {
   const normalized = color.trim();
@@ -212,9 +215,7 @@ const parseHexColor = (color: string): [number, number, number] | undefined => {
 };
 
 const toHexColor = ([red, green, blue]: [number, number, number]) =>
-  `#${[red, green, blue]
-    .map((channel) => channel.toString(16).padStart(2, '0'))
-    .join('')}`;
+  `#${[red, green, blue].map((channel) => channel.toString(16).padStart(2, '0')).join('')}`;
 
 const mixHexColors = (from: string, to: string, amount: number) => {
   const fromRgb = parseHexColor(from);
@@ -272,7 +273,8 @@ const resolveShellShadow = (tokens: DesignExplorationKnobTokens, shellShadow: nu
   const scaledAlpha =
     knob < DESIGN_EXPLORATION_KNOB_DEFAULT
       ? baseAlpha * (knob / DESIGN_EXPLORATION_KNOB_DEFAULT)
-      : baseAlpha + ((knob - DESIGN_EXPLORATION_KNOB_DEFAULT) / DESIGN_EXPLORATION_KNOB_DEFAULT) * baseAlpha;
+      : baseAlpha +
+        ((knob - DESIGN_EXPLORATION_KNOB_DEFAULT) / DESIGN_EXPLORATION_KNOB_DEFAULT) * baseAlpha;
 
   return `0px 1px 4px 0px rgba(${red}, ${green}, ${blue}, ${scaledAlpha.toFixed(3)})`;
 };
@@ -294,9 +296,7 @@ const writeStoredKnobOverrides = (overrides: StoredKnobOverrides) => {
   sessionStorage.setItem(DESIGN_EXPLORATION_KNOBS_SESSION_KEY, JSON.stringify(overrides));
 };
 
-export const getDesignExplorationKnobValues = (
-  variantId: string
-): DesignExplorationKnobValues => {
+export const getDesignExplorationKnobValues = (variantId: string): DesignExplorationKnobValues => {
   const defaults = createDefaultDesignExplorationKnobValues();
   const stored = readStoredKnobOverrides()[variantId];
 
@@ -309,10 +309,7 @@ export const getDesignExplorationKnobValues = (
     ...Object.fromEntries(
       DESIGN_EXPLORATION_KNOB_IDS.map((knobId) => [
         knobId,
-        snapDesignExplorationKnobValue(
-          knobId,
-          stored[knobId] ?? defaults[knobId]
-        ),
+        snapDesignExplorationKnobValue(knobId, stored[knobId] ?? defaults[knobId]),
       ])
     ),
   };
@@ -355,6 +352,7 @@ export const resolveDesignExplorationKnobCssVars = (
     [DESIGN_EXPLORATION_KNOB_CSS_VAR_NAMES.canvas]: resolveCanvasColor(tokens, surfaceContrast),
     [DESIGN_EXPLORATION_KNOB_CSS_VAR_NAMES.surface]: tokens.surface,
     [DESIGN_EXPLORATION_KNOB_CSS_VAR_NAMES.surfaceNav]: tokens.surfaceNav,
+    [DESIGN_EXPLORATION_KNOB_CSS_VAR_NAMES.dashboard]: tokens.dashboard,
     [DESIGN_EXPLORATION_KNOB_CSS_VAR_NAMES.padding]: scalePx(
       tokens.padding,
       steppedKnobMultiplier('density', density)
@@ -396,13 +394,24 @@ export const applyDesignExplorationKnobCssVars = (
   variantId: string,
   colorMode: ColorMode
 ) => {
-  const resolvedTokens = resolveDesignExplorationKnobTokensForColorMode(tokens, variantId, colorMode);
+  const resolvedTokens = resolveDesignExplorationKnobTokensForColorMode(
+    tokens,
+    variantId,
+    colorMode
+  );
+  const colorOverrides = getDesignExplorationColorOverrides(variantId);
   const cssVars = {
     ...resolveDesignExplorationKnobCssVars(
       resolvedTokens,
       getDesignExplorationKnobValues(variantId)
     ),
     ...resolveDesignExplorationBespokeCssVars(variantId, colorMode),
+    ...(colorOverrides.chrome && {
+      [DESIGN_EXPLORATION_KNOB_CSS_VAR_NAMES.canvas]: colorOverrides.chrome,
+    }),
+    ...(colorOverrides.dashboard && {
+      [DESIGN_EXPLORATION_KNOB_CSS_VAR_NAMES.dashboard]: colorOverrides.dashboard,
+    }),
   };
 
   Object.entries(cssVars).forEach(([name, value]) => {

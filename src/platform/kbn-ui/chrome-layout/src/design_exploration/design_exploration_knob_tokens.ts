@@ -8,7 +8,10 @@
  */
 
 import type { DesignExplorationKnobTokens } from './design_exploration_knobs';
-import { DESIGN_EXPLORATION_PADDING, DESIGN_EXPLORATION_PADDING_COMPACT } from './design_exploration_shared';
+import {
+  DESIGN_EXPLORATION_PADDING,
+  DESIGN_EXPLORATION_PADDING_COMPACT,
+} from './design_exploration_shared';
 import { ATTBANA_VARIANT_ID } from './variant_attbana';
 import { BASELINE_VARIANT_ID } from './variant_baseline';
 import { INTERBANA_VARIANT_ID } from './variant_interbana';
@@ -21,6 +24,7 @@ export const BASELINE_KNOB_TOKENS: DesignExplorationKnobTokens = {
   canvas: '#F7F8FC',
   surface: '#FFFFFF',
   surfaceNav: '#EFF2F7',
+  dashboard: 'transparent',
   padding: DESIGN_EXPLORATION_PADDING,
   gutter: DESIGN_EXPLORATION_PADDING,
   panelPadding: DESIGN_EXPLORATION_PADDING,
@@ -36,6 +40,7 @@ export const VERBANA_KNOB_TOKENS: DesignExplorationKnobTokens = {
   canvas: '#ECEFF4',
   surface: '#FFFFFF',
   surfaceNav: '#F4F6FA',
+  dashboard: 'transparent',
   padding: DESIGN_EXPLORATION_PADDING,
   gutter: 12,
   panelPadding: DESIGN_EXPLORATION_PADDING_COMPACT,
@@ -51,6 +56,7 @@ export const LINBANA_KNOB_TOKENS: DesignExplorationKnobTokens = {
   canvas: '#F3F4F8',
   surface: '#FAFAFC',
   surfaceNav: '#F3F4F8',
+  dashboard: 'transparent',
   padding: 20,
   gutter: 8,
   panelPadding: DESIGN_EXPLORATION_PADDING_COMPACT + 4,
@@ -71,6 +77,7 @@ export const INTERBANA_KNOB_TOKENS: DesignExplorationKnobTokens = {
   canvas: '#EBEEF4',
   surface: '#FFFFFF',
   surfaceNav: '#F8F9FB',
+  dashboard: 'transparent',
   padding: 24,
   gutter: 20,
   panelPadding: DESIGN_EXPLORATION_PADDING_COMPACT + 12,
@@ -85,6 +92,7 @@ export const INTERBANA_KNOB_TOKENS: DesignExplorationKnobTokens = {
 export const NIRBANA_KNOB_TOKENS: DesignExplorationKnobTokens = {
   ...INTERBANA_KNOB_TOKENS,
   canvas: '#EAEDF5',
+  dashboard: '#f7f8f9',
 };
 
 export const TARGET_KNOB_TOKENS: DesignExplorationKnobTokens = {
@@ -92,18 +100,21 @@ export const TARGET_KNOB_TOKENS: DesignExplorationKnobTokens = {
   radiusButton: 8,
   radiusPanel: 12,
   radiusPanelCompact: 12,
+  dashboard: '#f5f7fb',
 };
 
-export const DESIGN_EXPLORATION_KNOB_TOKENS_BY_VARIANT: Record<string, DesignExplorationKnobTokens> =
-  {
-    [BASELINE_VARIANT_ID]: BASELINE_KNOB_TOKENS,
-    [VERBANA_VARIANT_ID]: VERBANA_KNOB_TOKENS,
-    [LINBANA_VARIANT_ID]: LINBANA_KNOB_TOKENS,
-    [ATTBANA_VARIANT_ID]: ATTBANA_KNOB_TOKENS,
-    [INTERBANA_VARIANT_ID]: INTERBANA_KNOB_TOKENS,
-    [NIRBANA_VARIANT_ID]: NIRBANA_KNOB_TOKENS,
-    [TARGET_VARIANT_ID]: TARGET_KNOB_TOKENS,
-  };
+export const DESIGN_EXPLORATION_KNOB_TOKENS_BY_VARIANT: Record<
+  string,
+  DesignExplorationKnobTokens
+> = {
+  [BASELINE_VARIANT_ID]: BASELINE_KNOB_TOKENS,
+  [VERBANA_VARIANT_ID]: VERBANA_KNOB_TOKENS,
+  [LINBANA_VARIANT_ID]: LINBANA_KNOB_TOKENS,
+  [ATTBANA_VARIANT_ID]: ATTBANA_KNOB_TOKENS,
+  [INTERBANA_VARIANT_ID]: INTERBANA_KNOB_TOKENS,
+  [NIRBANA_VARIANT_ID]: NIRBANA_KNOB_TOKENS,
+  [TARGET_VARIANT_ID]: TARGET_KNOB_TOKENS,
+};
 
 export const getDesignExplorationKnobTokens = (variantId: string): DesignExplorationKnobTokens =>
   DESIGN_EXPLORATION_KNOB_TOKENS_BY_VARIANT[variantId] ?? BASELINE_KNOB_TOKENS;

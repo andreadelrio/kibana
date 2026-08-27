@@ -40,8 +40,6 @@ export const NIRBANA_VARIANT_ID = 'nirbana';
 //     lifts a true-white app surface; secondary nav side panel gets a subtle shade
 //   - warm orange accent instead of Linear's cool indigo
 const NIRBANA_ACCENT = '#F26522'; // warm orange accent (est. from reference)
-const NIRBANA_SURFACE_APP_LIGHT = '#f7f8f9';
-const NIRBANA_SURFACE_APP_DARK = '#10141a'; // soft step above dark canvas
 const NIRBANA_TOP_BAR_HEIGHT = 80;
 const NIRBANA_APP_HEADER_TRANSITION_MS = 200;
 const NIRBANA_NAV_EXPANDED_WIDTH = 220;
@@ -1363,11 +1361,6 @@ export const createNirbanaStyles = (euiTheme: UseEuiTheme) => {
       width: 100% !important;
       margin: 0 !important;
       border-radius: 0 !important;
-    }
-
-    ${scope} .dshDashboardViewportWrapper,
-    ${scope} .dshDashboardViewportWrapper--defaultBg {
-      background-color: ${isDarkMode ? NIRBANA_SURFACE_APP_DARK : NIRBANA_SURFACE_APP_LIGHT} !important;
     }
   `;
 };

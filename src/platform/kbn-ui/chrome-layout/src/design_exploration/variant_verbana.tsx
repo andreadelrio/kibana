@@ -295,11 +295,6 @@ export const createVerbanaStyles = (euiTheme: UseEuiTheme) => {
       border-radius: ${knobVar('radiusControl')} !important;
     }
 
-    ${scope} .dshDashboardViewportWrapper,
-    ${scope} .dshDashboardViewportWrapper--defaultBg {
-      background-color: transparent !important;
-    }
-
     ${scope} .kbnChromeLayoutNavigation {
       border-inline-end: ${DESIGN_EXPLORATION_BORDER_WIDTH}px solid ${colors.borderBaseSubdued} !important;
     }

@@ -40,7 +40,6 @@ export const TARGET_VARIANT_ID = 'target';
 //     lifts a true-white app surface; secondary nav side panel gets a subtle shade
 //   - warm orange accent instead of Linear's cool indigo
 const TARGET_ACCENT = '#F26522'; // warm orange accent (est. from reference)
-const TARGET_SURFACE_APP_LIGHT = '#f5f7fb';
 /** Dark html root — two steps below canvas `#09121E`. */
 const TARGET_HTML_ROOT_DARK = '#040A14';
 const TARGET_TOP_BAR_HEIGHT = 80;
@@ -92,9 +91,6 @@ export const createTargetStyles = (euiTheme: UseEuiTheme) => {
     ? `color-mix(in srgb, ${knobVar('canvas')} 8%, ${colors.backgroundBasePlain})`
     : knobVar('surface');
   const targetSurfaceNav = isDarkMode ? colors.backgroundBaseSubdued : knobVar('surfaceNav');
-  const targetAppSurface = isDarkMode
-    ? `color-mix(in srgb, ${knobVar('canvas')} 65%, ${colors.backgroundBasePlain})`
-    : TARGET_SURFACE_APP_LIGHT;
   const targetShellShadow = isDarkMode ? 'none' : knobVar('shellShadow');
   const targetText = isDarkMode
     ? `color-mix(in srgb, ${colors.textParagraph} 80%, transparent)`
@@ -1741,11 +1737,6 @@ export const createTargetStyles = (euiTheme: UseEuiTheme) => {
       width: 100% !important;
       margin: 0 !important;
       border-radius: 0 !important;
-    }
-
-    ${scope} .dshDashboardViewportWrapper,
-    ${scope} .dshDashboardViewportWrapper--defaultBg {
-      background-color: ${targetAppSurface} !important;
     }
   `;
 };

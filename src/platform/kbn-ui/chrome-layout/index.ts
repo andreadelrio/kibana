@@ -38,6 +38,7 @@ export {
 } from './src/design_exploration/design_exploration_chrome_styles';
 
 export { DesignExplorationKnobsPanel } from './src/design_exploration/design_exploration_knobs_panel';
+export { DesignExplorationColorsPanel } from './src/design_exploration/design_exploration_colors_panel';
 
 export {
   TARGET_NAV_COLLAPSED_WIDTH,

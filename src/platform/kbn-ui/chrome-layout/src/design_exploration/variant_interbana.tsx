@@ -1295,10 +1295,5 @@ export const createInterbanaStyles = (euiTheme: UseEuiTheme) => {
       backdrop-filter: none !important;
       -webkit-backdrop-filter: none !important;
     }
-
-    ${scope} .dshDashboardViewportWrapper,
-    ${scope} .dshDashboardViewportWrapper--defaultBg {
-      background-color: transparent !important;
-    }
   `;
 };

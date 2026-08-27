@@ -16,7 +16,11 @@ import type { InternalThemeServiceStart } from '@kbn/core-theme-browser-internal
 import { BehaviorSubject } from 'rxjs';
 import { type DeveloperToolbarItemProps } from '@kbn/developer-toolbar';
 
-import { NEXT_CHROME_FEATURE_FLAG_KEY, isDesignExploration, isNextChrome } from '@kbn/core-chrome-feature-flags';
+import {
+  NEXT_CHROME_FEATURE_FLAG_KEY,
+  isDesignExploration,
+  isNextChrome,
+} from '@kbn/core-chrome-feature-flags';
 
 export type UnregisterItemFn = () => void;
 export interface DeveloperToolbarItemRegistry {
@@ -113,13 +117,21 @@ export class DeveloperToolbarPlugin
         }
       );
 
-      import('@kbn/ui-chrome-layout').then(({ DesignExplorationKnobsPanel }) => {
-        this.registerItem({
-          id: 'Design exploration knobs',
-          children: <DesignExplorationKnobsPanel />,
-          priority: 8,
-        });
-      });
+      import('@kbn/ui-chrome-layout').then(
+        ({ DesignExplorationKnobsPanel, DesignExplorationColorsPanel }) => {
+          this.registerItem({
+            id: 'Design exploration knobs',
+            children: <DesignExplorationKnobsPanel />,
+            priority: 8,
+          });
+
+          this.registerItem({
+            id: 'Design exploration colors',
+            children: <DesignExplorationColorsPanel />,
+            priority: 7,
+          });
+        }
+      );
     }
 
     return {

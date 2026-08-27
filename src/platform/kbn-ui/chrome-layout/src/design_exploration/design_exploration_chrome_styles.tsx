@@ -88,6 +88,17 @@ const createDesignExplorationFramedChromeRadiusStyles = () => {
  * Top spacing for the app workspace comes from `projectNextHeaderless.applicationMarginTop`
  * in grid_layout (8px), which also shortens application height via layout CSS vars.
  */
+const createDesignExplorationDashboardSurfaceStyles = () => {
+  const scope = designExplorationScope();
+
+  return css`
+    ${scope} .dshDashboardViewportWrapper,
+    ${scope} .dshDashboardViewportWrapper--defaultBg {
+      background-color: ${knobVar('dashboard')} !important;
+    }
+  `;
+};
+
 export const DesignExplorationChromeGlobalStyles = () => {
   const euiTheme = useEuiTheme();
   const activeVariantId = getDesignExplorationVariant();
@@ -141,6 +152,7 @@ export const DesignExplorationChromeGlobalStyles = () => {
       styles={[
         createDesignExplorationFramedChromeRadiusStyles(),
         createActiveDesignExplorationStyles(euiTheme),
+        createDesignExplorationDashboardSurfaceStyles(),
       ]}
     />
   );
