@@ -37,6 +37,7 @@ import {
 } from '../../dashboard_actions/_dashboard_actions_strings';
 import { useBulkPanelActions } from '../grid/use_bulk_panel_actions';
 import { useAddPanelsToChatAction } from './use_add_panels_to_chat_action';
+import { useToolbarExpandAnimation } from './use_toolbar_expand_animation';
 import {
   getAnnotationsVisibility,
   setAnnotationsHidden,
@@ -108,7 +109,8 @@ const ActionButton = ({
 export const SelectedPanelsToolbar = ({ selectedPanelIds }: { selectedPanelIds: Set<string> }) => {
   const dashboardApi = useDashboardApi();
   const styles = useMemoCss(toolbarStyles);
-  const [isExpanded, setIsExpanded] = useState(false);
+  const { isExpanded, isMoreMounted, toggle, surfaceRef, contentRef, moreRef } =
+    useToolbarExpandAnimation();
   const [isLayoutPopoverOpen, setIsLayoutPopoverOpen] = useState(false);
 
   const { duplicate, remove, group, canGroup, applyLayout, copyToDashboard, canCopyToDashboard } =
@@ -164,168 +166,177 @@ export const SelectedPanelsToolbar = ({ selectedPanelIds }: { selectedPanelIds: 
   const layoutLabel = dashboardPanelContextMenuStrings.getLayoutLabel();
 
   return (
-    <EuiPanel
-      hasShadow
-      hasBorder={false}
-      paddingSize="s"
-      borderRadius="m"
+    <div
       css={styles.toolbar}
       role="toolbar"
       aria-label={strings.getToolbarLabel()}
       data-test-subj="dashboardSelectedPanelsToolbar"
     >
-      {isExpanded && (
-        <div data-test-subj="dashboardSelectedPanelsToolbarMore">
-          <EuiContextMenuItem
-            icon="palette"
-            // not implemented yet
-            onClick={() => {}}
-            data-test-subj="dashboardSelectedPanelsToolbarShareColors"
-          >
-            {strings.getShareColorMapping()}
-          </EuiContextMenuItem>
-          {annotationsVisibility !== 'none' && (
+      {/* the surface expands independently while the button row stays in place */}
+      <EuiPanel
+        panelRef={surfaceRef}
+        hasShadow
+        hasBorder={false}
+        paddingSize="none"
+        borderRadius="m"
+        css={styles.surface}
+        aria-hidden
+      />
+      <div ref={contentRef} css={styles.content}>
+        {isMoreMounted && (
+          <div ref={moreRef} css={styles.more} data-test-subj="dashboardSelectedPanelsToolbarMore">
             <EuiContextMenuItem
-              icon="flag"
-              onClick={toggleAnnotations}
-              data-test-subj="dashboardSelectedPanelsToolbarToggleAnnotations"
+              icon="palette"
+              // not implemented yet
+              onClick={() => {}}
+              data-test-subj="dashboardSelectedPanelsToolbarShareColors"
             >
-              {annotationsVisibility === 'visible'
-                ? strings.getHideAnnotations()
-                : strings.getShowAnnotations()}
+              {strings.getShareColorMapping()}
             </EuiContextMenuItem>
-          )}
-          <EuiContextMenuItem
-            icon={<EuiIcon type="trash" color="danger" aria-hidden />}
-            onClick={remove}
-            css={styles.danger}
-            data-test-subj="dashboardSelectedPanelsToolbarRemove"
-          >
-            {strings.getDeletePanels()}
-          </EuiContextMenuItem>
-          <EuiHorizontalRule margin="s" />
-        </div>
-      )}
-      <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
-        <EuiFlexItem grow={false}>
-          <ActionButton
-            label={strings.getClearSelection()}
-            iconType="cross"
-            onClick={clearSelection}
-            data-test-subj="dashboardSelectedPanelsToolbarClear"
-          />
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiText size="s" css={styles.count} data-test-subj="dashboardSelectedPanelsCount">
-            {strings.getSelectedCount(selectedPanelIds.size)}
-          </EuiText>
-        </EuiFlexItem>
-        <div css={styles.separator} aria-hidden />
-        {addToChat && (
-          <EuiFlexItem grow={false}>
-            <AiButton
-              iconOnly
-              variant="empty"
-              size="s"
-              iconType="addToChat"
-              aria-label={strings.getAddToChat()}
-              withToolTip
-              onClick={() => addToChat.execute()}
-              data-test-subj="dashboardSelectedPanelsToolbarAddToChat"
-            />
-          </EuiFlexItem>
+            {annotationsVisibility !== 'none' && (
+              <EuiContextMenuItem
+                icon="flag"
+                onClick={toggleAnnotations}
+                data-test-subj="dashboardSelectedPanelsToolbarToggleAnnotations"
+              >
+                {annotationsVisibility === 'visible'
+                  ? strings.getHideAnnotations()
+                  : strings.getShowAnnotations()}
+              </EuiContextMenuItem>
+            )}
+            <EuiContextMenuItem
+              icon={<EuiIcon type="trash" color="danger" aria-hidden />}
+              onClick={remove}
+              css={styles.danger}
+              data-test-subj="dashboardSelectedPanelsToolbarRemove"
+            >
+              {strings.getDeletePanels()}
+            </EuiContextMenuItem>
+            <EuiHorizontalRule margin="s" />
+          </div>
         )}
-        <EuiFlexItem grow={false}>
-          <ActionButton
-            label={dashboardClonePanelActionStrings.getDisplayName()}
-            iconType="copy"
-            onClick={duplicate}
-            data-test-subj="dashboardSelectedPanelsToolbarDuplicate"
-          />
-        </EuiFlexItem>
-        {canCopyToDashboard && (
+        <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
           <EuiFlexItem grow={false}>
             <ActionButton
-              label={dashboardCopyToDashboardActionStrings.getDisplayName()}
-              iconType="addToDashboard"
-              onClick={copyToDashboard}
-              data-test-subj="dashboardSelectedPanelsToolbarCopyToDashboard"
+              label={strings.getClearSelection()}
+              iconType="cross"
+              onClick={clearSelection}
+              data-test-subj="dashboardSelectedPanelsToolbarClear"
             />
           </EuiFlexItem>
-        )}
-        <EuiFlexItem grow={false}>
-          <ActionButton
-            label={strings.getGroupIntoSection()}
-            tooltip={canGroup ? undefined : strings.getGroupDisabled()}
-            iconType="section"
-            onClick={group}
-            isDisabled={!canGroup}
-            data-test-subj="dashboardSelectedPanelsToolbarGroup"
-          />
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiPopover
-            isOpen={isLayoutPopoverOpen}
-            closePopover={() => setIsLayoutPopoverOpen(false)}
-            anchorPosition="upCenter"
-            panelPaddingSize="none"
-            aria-label={layoutLabel}
-            button={
-              <ActionButton
-                label={layoutLabel}
-                iconType="grid"
-                onClick={() => setIsLayoutPopoverOpen((open) => !open)}
-                isSelected={isLayoutPopoverOpen}
-                data-test-subj="dashboardSelectedPanelsToolbarLayout"
+          <EuiFlexItem grow={false}>
+            <EuiText size="s" css={styles.count} data-test-subj="dashboardSelectedPanelsCount">
+              {strings.getSelectedCount(selectedPanelIds.size)}
+            </EuiText>
+          </EuiFlexItem>
+          <div css={styles.separator} aria-hidden />
+          {addToChat && (
+            <EuiFlexItem grow={false}>
+              <AiButton
+                iconOnly
+                variant="empty"
+                size="s"
+                iconType="addToChat"
+                aria-label={strings.getAddToChat()}
+                withToolTip
+                onClick={() => addToChat.execute()}
+                data-test-subj="dashboardSelectedPanelsToolbarAddToChat"
               />
-            }
-          >
-            <EuiContextMenuPanel
-              items={[
-                <EuiContextMenuItem
-                  key="header"
-                  icon="alignTop"
-                  onClick={() => handleLayout('header')}
-                  data-test-subj="dashboardSelectedPanelsToolbarLayoutHeader"
-                >
-                  {dashboardPanelContextMenuStrings.getLayoutHeaderLabel()}
-                </EuiContextMenuItem>,
-                <EuiContextMenuItem
-                  key="grid"
-                  icon="grid"
-                  onClick={() => handleLayout('grid')}
-                  data-test-subj="dashboardSelectedPanelsToolbarLayoutGrid"
-                >
-                  {dashboardPanelContextMenuStrings.getLayoutGridLabel()}
-                </EuiContextMenuItem>,
-                <EuiContextMenuItem
-                  key="side"
-                  icon="boxesHorizontal"
-                  onClick={() => handleLayout('side')}
-                  data-test-subj="dashboardSelectedPanelsToolbarLayoutSide"
-                >
-                  {dashboardPanelContextMenuStrings.getLayoutSideLabel()}
-                </EuiContextMenuItem>,
-              ]}
+            </EuiFlexItem>
+          )}
+          <EuiFlexItem grow={false}>
+            <ActionButton
+              label={dashboardClonePanelActionStrings.getDisplayName()}
+              iconType="copy"
+              onClick={duplicate}
+              data-test-subj="dashboardSelectedPanelsToolbarDuplicate"
             />
-          </EuiPopover>
-        </EuiFlexItem>
-        <div css={styles.separator} aria-hidden />
-        <EuiFlexItem grow={false}>
-          <ActionButton
-            label={isExpanded ? strings.getShowLess() : strings.getShowMore()}
-            iconType={isExpanded ? 'minimize' : 'maximize'}
-            onClick={() => setIsExpanded((expanded) => !expanded)}
-            aria-expanded={isExpanded}
-            data-test-subj="dashboardSelectedPanelsToolbarToggleMore"
-          />
-        </EuiFlexItem>
-      </EuiFlexGroup>
-    </EuiPanel>
+          </EuiFlexItem>
+          {canCopyToDashboard && (
+            <EuiFlexItem grow={false}>
+              <ActionButton
+                label={dashboardCopyToDashboardActionStrings.getDisplayName()}
+                iconType="addToDashboard"
+                onClick={copyToDashboard}
+                data-test-subj="dashboardSelectedPanelsToolbarCopyToDashboard"
+              />
+            </EuiFlexItem>
+          )}
+          <EuiFlexItem grow={false}>
+            <ActionButton
+              label={strings.getGroupIntoSection()}
+              tooltip={canGroup ? undefined : strings.getGroupDisabled()}
+              iconType="section"
+              onClick={group}
+              isDisabled={!canGroup}
+              data-test-subj="dashboardSelectedPanelsToolbarGroup"
+            />
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiPopover
+              isOpen={isLayoutPopoverOpen}
+              closePopover={() => setIsLayoutPopoverOpen(false)}
+              anchorPosition="upCenter"
+              panelPaddingSize="none"
+              aria-label={layoutLabel}
+              button={
+                <ActionButton
+                  label={layoutLabel}
+                  iconType="grid"
+                  onClick={() => setIsLayoutPopoverOpen((open) => !open)}
+                  isSelected={isLayoutPopoverOpen}
+                  data-test-subj="dashboardSelectedPanelsToolbarLayout"
+                />
+              }
+            >
+              <EuiContextMenuPanel
+                items={[
+                  <EuiContextMenuItem
+                    key="header"
+                    icon="alignTop"
+                    onClick={() => handleLayout('header')}
+                    data-test-subj="dashboardSelectedPanelsToolbarLayoutHeader"
+                  >
+                    {dashboardPanelContextMenuStrings.getLayoutHeaderLabel()}
+                  </EuiContextMenuItem>,
+                  <EuiContextMenuItem
+                    key="grid"
+                    icon="grid"
+                    onClick={() => handleLayout('grid')}
+                    data-test-subj="dashboardSelectedPanelsToolbarLayoutGrid"
+                  >
+                    {dashboardPanelContextMenuStrings.getLayoutGridLabel()}
+                  </EuiContextMenuItem>,
+                  <EuiContextMenuItem
+                    key="side"
+                    icon="boxesHorizontal"
+                    onClick={() => handleLayout('side')}
+                    data-test-subj="dashboardSelectedPanelsToolbarLayoutSide"
+                  >
+                    {dashboardPanelContextMenuStrings.getLayoutSideLabel()}
+                  </EuiContextMenuItem>,
+                ]}
+              />
+            </EuiPopover>
+          </EuiFlexItem>
+          <div css={styles.separator} aria-hidden />
+          <EuiFlexItem grow={false}>
+            <ActionButton
+              label={isExpanded ? strings.getShowLess() : strings.getShowMore()}
+              iconType={isExpanded ? 'minimize' : 'maximize'}
+              onClick={toggle}
+              aria-expanded={isExpanded}
+              data-test-subj="dashboardSelectedPanelsToolbarToggleMore"
+            />
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </div>
+    </div>
   );
 };
 
 const toolbarStyles = {
+  // bottom-centered anchor: the toolbar grows upward and equally to both sides
   toolbar: ({ euiTheme }: UseEuiTheme) => ({
     position: 'fixed' as const,
     bottom: euiTheme.size.l,
@@ -333,6 +344,25 @@ const toolbarStyles = {
     transform: 'translateX(-50%)',
     zIndex: euiTheme.levels.flyout,
   }),
+  surface: {
+    position: 'absolute' as const,
+    left: '50%',
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    transform: 'translateX(-50%)',
+    transformOrigin: 'center bottom',
+  },
+  content: ({ euiTheme }: UseEuiTheme) => ({
+    position: 'relative' as const,
+    padding: euiTheme.size.s,
+  }),
+  more: {
+    display: 'flow-root' as const,
+    // Keep the persistent button row in control of the toolbar's width.
+    width: 0,
+    minWidth: '100%',
+  },
   count: ({ euiTheme }: UseEuiTheme) => ({
     paddingRight: euiTheme.size.s,
     whiteSpace: 'nowrap' as const,
