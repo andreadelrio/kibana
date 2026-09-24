@@ -8,32 +8,23 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
-import {
-  EuiContextMenu,
-  EuiContextMenuPanelDescriptor,
-  EuiPortal,
-  EuiPopover,
-} from '@elastic/eui';
-import { toMountPoint } from '@kbn/react-kibana-mount';
-import { useDashboardApi } from '../../dashboard_api/use_dashboard_api';
-import {
-  applySelectedPanelsLayout,
-  type SelectedPanelsLayoutMode,
-} from '../../dashboard_api/layout_manager/apply_selected_panels_layout';
+import type { EuiContextMenuPanelDescriptor } from '@elastic/eui';
+import { EuiContextMenu, EuiPortal, EuiPopover } from '@elastic/eui';
+import type { SelectedPanelsLayoutMode } from '../../dashboard_api/layout_manager/apply_selected_panels_layout';
 import {
   dashboardClonePanelActionStrings,
   dashboardCopyToDashboardActionStrings,
   dashboardPanelContextMenuStrings,
 } from '../../dashboard_actions/_dashboard_actions_strings';
-import { CopyToDashboardModal } from '../../dashboard_actions/copy_to_dashboard_modal';
-import { coreServices } from '../../services/kibana_services';
-import { getDashboardCapabilities } from '../../utils/get_dashboard_capabilities';
+import { useBulkPanelActions } from './use_bulk_panel_actions';
 
 export interface PanelContextMenuContextValue {
   openContextMenu: (panelId: string, position: { x: number; y: number }) => void;
 }
 
-export const PanelContextMenuContext = React.createContext<PanelContextMenuContextValue | null>(null);
+export const PanelContextMenuContext = React.createContext<PanelContextMenuContextValue | null>(
+  null
+);
 
 export const SelectionPreviewContext = React.createContext<Set<string>>(new Set());
 
@@ -50,122 +41,46 @@ export const PanelContextMenu = ({
   selectedPanelIds,
   onClose,
 }: PanelContextMenuProps) => {
-  const dashboardApi = useDashboardApi();
-
   const effectivePanelIds = useMemo(() => {
     if (!panelId) return new Set<string>();
     return selectedPanelIds.has(panelId) ? selectedPanelIds : new Set([panelId]);
   }, [panelId, selectedPanelIds]);
 
+  const { duplicate, remove, group, canGroup, applyLayout, copyToDashboard, canCopyToDashboard } =
+    useBulkPanelActions(effectivePanelIds);
+
   const handleDuplicate = useCallback(async () => {
-    const ids = Array.from(effectivePanelIds);
-    if (ids.length === 0) {
-      onClose();
-      return;
-    }
     try {
-      if (ids.length === 1 && dashboardApi.duplicatePanel) {
-        await dashboardApi.duplicatePanel(ids[0]);
-      } else if (dashboardApi.duplicatePanels) {
-        await dashboardApi.duplicatePanels(ids);
-      } else {
-        for (const id of ids) {
-          try {
-            await dashboardApi.duplicatePanel(id);
-          } catch {
-            // skip
-          }
-        }
-      }
+      await duplicate();
     } finally {
       onClose();
     }
-  }, [dashboardApi, effectivePanelIds, onClose]);
+  }, [duplicate, onClose]);
 
   const handleRemove = useCallback(() => {
-    const ids = Array.from(effectivePanelIds);
-    if (ids.length === 0) {
-      onClose();
-      return;
-    }
-    try {
-      if (ids.length === 1 && dashboardApi.removePanel) {
-        dashboardApi.removePanel(ids[0]);
-      } else if (dashboardApi.removePanels) {
-        dashboardApi.removePanels(ids);
-      } else {
-        ids.forEach((id) => {
-          try {
-            dashboardApi.removePanel(id);
-          } catch {
-            // skip
-          }
-        });
-      }
-    } finally {
-      const nextSelected = new Set(selectedPanelIds);
-      effectivePanelIds.forEach((id) => nextSelected.delete(id));
-      dashboardApi.setSelectedPanelIds(nextSelected);
-      onClose();
-    }
-  }, [dashboardApi, effectivePanelIds, selectedPanelIds, onClose]);
+    remove();
+    onClose();
+  }, [remove, onClose]);
 
   const handleGroup = useCallback(() => {
-    if (effectivePanelIds.size < 2) return;
-    dashboardApi.movePanelsToNewSection(Array.from(effectivePanelIds));
+    group();
     onClose();
-  }, [dashboardApi, effectivePanelIds, onClose]);
+  }, [group, onClose]);
 
   const handleLayoutSubAction = useCallback(
     (which: SelectedPanelsLayoutMode) => {
-      const ids = Array.from(effectivePanelIds);
-      if (ids.length === 0) {
-        onClose();
-        return;
-      }
-      const layout = dashboardApi.layout$.getValue();
-      const nextLayout = applySelectedPanelsLayout(layout, effectivePanelIds, which);
-      dashboardApi.layout$.next(nextLayout);
+      applyLayout(which);
       onClose();
     },
-    [dashboardApi, effectivePanelIds, onClose]
+    [applyLayout, onClose]
   );
 
   const handleCopyToDashboard = useCallback(() => {
-    if (!panelId || effectivePanelIds.size === 0) {
-      onClose();
-      return;
-    }
-    dashboardApi.setSelectedPanelIds(effectivePanelIds);
     onClose();
-    const layout = dashboardApi.layout$.getValue();
-    const panelLayout = layout.panels[panelId];
-    const panelType = panelLayout?.type ?? 'unknown';
-    const api = {
-      type: panelType,
-      uuid: panelId,
-      parentApi: dashboardApi,
-    };
-    const session = coreServices.overlays.openModal(
-      toMountPoint(
-        <CopyToDashboardModal closeModal={() => session.close()} api={api} />,
-        coreServices
-      ),
-      {
-        maxWidth: 400,
-        'data-test-subj': 'copyToDashboardPanel',
-      }
-    );
-  }, [dashboardApi, panelId, effectivePanelIds, onClose]);
-
-  const canCopyToDashboard = useMemo(() => {
-    const { createNew: canCreateNew, showWriteControls: canEditExisting } =
-      getDashboardCapabilities();
-    return Boolean(canCreateNew || canEditExisting);
-  }, []);
+    copyToDashboard();
+  }, [copyToDashboard, onClose]);
 
   const panels: EuiContextMenuPanelDescriptor[] = useMemo(() => {
-    const canGroup = effectivePanelIds.size >= 2;
     const layoutSubPanelId = 1;
     return [
       {
@@ -182,7 +97,7 @@ export const PanelContextMenu = ({
             ? [
                 {
                   name: dashboardCopyToDashboardActionStrings.getDisplayName(),
-                  icon: 'exit' as const,
+                  icon: 'addToDashboard' as const,
                   onClick: handleCopyToDashboard,
                   'data-test-subj': 'dashboardPanelContextMenuCopyToDashboard',
                 },
@@ -240,7 +155,7 @@ export const PanelContextMenu = ({
     handleRemove,
     handleGroup,
     handleLayoutSubAction,
-    effectivePanelIds.size,
+    canGroup,
     canCopyToDashboard,
   ]);
 
@@ -266,6 +181,7 @@ export const PanelContextMenu = ({
           anchorPosition="downLeft"
           panelPaddingSize="none"
           hasArrow={false}
+          aria-label={dashboardPanelContextMenuStrings.getContextMenuAriaLabel()}
         >
           <EuiContextMenu
             initialPanelId={0}

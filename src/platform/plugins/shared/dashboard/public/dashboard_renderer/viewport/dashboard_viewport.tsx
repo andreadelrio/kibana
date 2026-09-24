@@ -19,6 +19,7 @@ import { useDashboardInternalApi } from '../../dashboard_api/use_dashboard_inter
 import { DashboardGrid } from '../grid';
 import { DashboardEmptyScreen } from './empty_screen/dashboard_empty_screen';
 import { DashboardKeyboardShortcuts } from './dashboard_keyboard_shortcuts';
+import { SelectedPanelsToolbar } from '../selected_panels_toolbar/selected_panels_toolbar';
 import { useKeyboardShortcutHighlight } from './keyboard_shortcut_highlight_context';
 
 export const DashboardViewport = () => {
@@ -33,6 +34,7 @@ export const DashboardViewport = () => {
     viewMode,
     useMargins,
     fullScreenMode,
+    selectedPanelIds,
   ] = useBatchedPublishingSubjects(
     dashboardApi.title$,
     dashboardApi.description$,
@@ -40,7 +42,8 @@ export const DashboardViewport = () => {
     dashboardApi.layout$,
     dashboardApi.viewMode$,
     dashboardApi.settings.useMargins$,
-    dashboardApi.fullScreenMode$
+    dashboardApi.fullScreenMode$,
+    dashboardApi.selectedPanelIds$
   );
   const onExit = useCallback(() => {
     dashboardApi.setFullScreenMode(false);
@@ -112,7 +115,11 @@ export const DashboardViewport = () => {
       )}
       {viewMode === 'edit' && (
         <EuiPortal>
-          <DashboardKeyboardShortcuts />
+          {selectedPanelIds.size > 0 ? (
+            <SelectedPanelsToolbar selectedPanelIds={selectedPanelIds} />
+          ) : (
+            <DashboardKeyboardShortcuts />
+          )}
         </EuiPortal>
       )}
       <div

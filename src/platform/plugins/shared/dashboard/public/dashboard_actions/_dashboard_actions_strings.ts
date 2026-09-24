@@ -62,6 +62,10 @@ export const dashboardShareColorMappingActionStrings = {
 };
 
 export const dashboardPanelContextMenuStrings = {
+  getContextMenuAriaLabel: () =>
+    i18n.translate('dashboard.panel.contextMenu.ariaLabel', {
+      defaultMessage: 'Panel actions',
+    }),
   getDuplicateLabel: () =>
     i18n.translate('dashboard.panel.contextMenu.duplicate', {
       defaultMessage: 'Duplicate',
