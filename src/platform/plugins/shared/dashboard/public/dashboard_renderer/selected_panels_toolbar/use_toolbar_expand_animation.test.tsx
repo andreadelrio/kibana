@@ -17,7 +17,12 @@ const Harness = () => {
   const { isMoreMounted, toggle, frameRef, moreRef } = useToolbarExpandAnimation();
   return (
     <div ref={frameRef} data-test-subj="frame">
-      {isMoreMounted && <div ref={moreRef} data-test-subj="more" />}
+      {isMoreMounted && (
+        <div ref={moreRef} data-test-subj="more">
+          <div data-test-subj="option" />
+          <div data-test-subj="option" />
+        </div>
+      )}
       <button onClick={toggle}>Toggle</button>
     </div>
   );
@@ -36,7 +41,8 @@ let reducedMotion = false;
 
 const toggle = () => fireEvent.click(screen.getByRole('button', { name: 'Toggle' }));
 
-// each toggle starts two animations: the frame clip, then the options fade
+// each toggle starts four animations: the frame clip, the options riding the edge, and one fade
+// per option (two in the harness)
 const getAnimation = (index: number): ReturnType<typeof createAnimation> =>
   animate.mock.results[index].value;
 
@@ -83,22 +89,39 @@ afterEach(() => {
 test('reveals the frame from the bottom edge with a clip-path instead of resizing it', () => {
   render(<Harness />);
   toggle();
-  expect(animate).toHaveBeenNthCalledWith(
-    1,
-    [
-      { clipPath: 'inset(132px 0px 0px 0px round 0px)' },
-      { clipPath: 'inset(0px 0px 0px 0px round 0px)' },
-    ],
-    expect.objectContaining({ duration: 260, fill: 'none' })
+  const [frameKeyframes, frameOptions] = animate.mock.calls[0] as unknown as [
+    Keyframe[],
+    KeyframeAnimationOptions
+  ];
+  expect(frameKeyframes[0].clipPath).toBe('inset(132px 0px 0px 0px round 0px)');
+  expect(frameKeyframes[frameKeyframes.length - 1].clipPath).toBe(
+    'inset(0px 0px 0px 0px round 0px)'
   );
-  // the options materialize: opacity + rise + blur that clears
+  // only the height is revealed; the width never changes
+  expect(frameKeyframes).toHaveLength(2);
+  expect(frameOptions).toEqual(expect.objectContaining({ fill: 'none' }));
+});
+
+test('the options ride up with the edge and materialize one after another', () => {
+  render(<Harness />);
+  toggle();
   expect(animate).toHaveBeenNthCalledWith(
     2,
+    [{ transform: 'translateY(66.00px)' }, { transform: 'none' }],
+    expect.objectContaining({ fill: 'backwards' })
+  );
+  expect(animate).toHaveBeenNthCalledWith(
+    3,
     [
-      { opacity: 0, transform: 'translateY(4px)', filter: 'blur(4px)' },
-      { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+      { opacity: 0, filter: 'blur(4px)' },
+      { opacity: 1, filter: 'blur(0px)' },
     ],
-    expect.objectContaining({ duration: 160 })
+    expect.objectContaining({ duration: 160, delay: 0 })
+  );
+  expect(animate).toHaveBeenNthCalledWith(
+    4,
+    expect.any(Array),
+    expect.objectContaining({ delay: 20 })
   );
 });
 
@@ -111,7 +134,7 @@ test('keeps exiting options inert and mounted until the frame finishes closing',
   toggle();
   expect(more.inert).toBe(true);
   expect(more).toBeInTheDocument();
-  act(() => getAnimation(2).onfinish?.());
+  act(() => getAnimation(4).onfinish?.());
   expect(screen.queryByTestId('more')).not.toBeInTheDocument();
 });
 
@@ -120,40 +143,48 @@ test('reverses from the current visual state', () => {
   toggle();
   const frame = screen.getByTestId('frame');
   const more = screen.getByTestId('more');
-  // mid-animation: 60px of the frame still clipped, options half faded in
+  const [firstOption] = screen.getAllByTestId('option');
+  // mid-animation: 60px of the frame still clipped, options half way up and half faded in
   frame.style.clipPath = 'inset(60px 0px 0px 0px round 0px)';
-  more.style.opacity = '0.5';
-  more.style.transform = 'translateY(2px) scale(0.97)';
+  more.style.transform = 'translateY(30px)';
+  firstOption.style.opacity = '0.5';
   toggle();
 
   expect(getAnimation(0).cancel).toHaveBeenCalled();
+  const [closeKeyframes, closeOptions] = animate.mock.calls[4] as unknown as [
+    Keyframe[],
+    KeyframeAnimationOptions
+  ];
+  expect(closeKeyframes[0].clipPath).toBe('inset(60px 0px 0px 0px round 0px)');
+  expect(closeKeyframes[closeKeyframes.length - 1].clipPath).toBe(
+    'inset(132px 0px 0px 0px round 0px)'
+  );
+  expect(closeOptions).toEqual(expect.objectContaining({ duration: 200, fill: 'forwards' }));
   expect(animate).toHaveBeenNthCalledWith(
-    3,
-    [
-      { clipPath: 'inset(60px 0px 0px 0px round 0px)' },
-      { clipPath: 'inset(132px 0px 0px 0px round 0px)' },
-    ],
-    expect.objectContaining({ duration: 200, fill: 'forwards' })
+    6,
+    [{ transform: 'translateY(30px)' }, { transform: 'translateY(66.00px)' }],
+    expect.any(Object)
   );
   expect(animate).toHaveBeenNthCalledWith(
-    4,
+    7,
     [
-      { opacity: 0.5, transform: 'translateY(2px) scale(0.97)', filter: 'blur(0px)' },
-      { opacity: 0, transform: 'translateY(4px)', filter: 'blur(0px)' },
+      { opacity: 0.5, filter: 'blur(0px)' },
+      { opacity: 0, filter: 'blur(0px)' },
     ],
-    expect.any(Object)
+    expect.objectContaining({ duration: 120, delay: 0 })
   );
 
   toggle();
-  expect(getAnimation(2).onfinish).toBeNull();
-  expect(getAnimation(2).cancel).toHaveBeenCalled();
+  expect(getAnimation(4).onfinish).toBeNull();
+  expect(getAnimation(4).cancel).toHaveBeenCalled();
+  // reopening continues from the half-faded state, without waiting for a stagger
   expect(animate).toHaveBeenNthCalledWith(
-    6,
+    11,
     [
-      { opacity: 0.5, transform: 'translateY(2px) scale(0.97)', filter: 'blur(4px)' },
-      { opacity: 1, transform: 'none', filter: 'blur(0px)' },
+      { opacity: 0.5, filter: 'blur(0px)' },
+      { opacity: 1, filter: 'blur(0px)' },
     ],
-    expect.any(Object)
+    expect.objectContaining({ delay: 0 })
   );
   expect(more.inert).toBe(false);
 });
@@ -172,13 +203,34 @@ test('plays the expressive version only on the first-ever expand', () => {
   expect(window.localStorage.getItem(FIRST_EXPAND_STORAGE_KEY)).toBe('true');
 
   toggle();
-  act(() => getAnimation(2).onfinish?.());
+  act(() => getAnimation(4).onfinish?.());
   toggle();
   expect(animate).toHaveBeenNthCalledWith(
-    5,
+    9,
     expect.any(Array),
     expect.objectContaining({ duration: 260 })
   );
+});
+
+test('uses a spring encoded as a linear() easing when the browser supports it', () => {
+  const originalCSS = window.CSS;
+  Object.defineProperty(window, 'CSS', {
+    configurable: true,
+    value: { supports: () => true },
+  });
+  try {
+    render(<Harness />);
+    toggle();
+    const [, options] = animate.mock.calls[0] as unknown as [Keyframe[], KeyframeAnimationOptions];
+    expect(options.easing).toMatch(/^linear\(0, /);
+    expect(options.duration).toBeGreaterThan(200);
+    // the options ride with the exact same timing as the frame
+    expect((animate.mock.calls[1] as unknown as [Keyframe[], KeyframeAnimationOptions])[1]).toEqual(
+      expect.objectContaining({ easing: options.easing, duration: options.duration })
+    );
+  } finally {
+    Object.defineProperty(window, 'CSS', { configurable: true, value: originalCSS });
+  }
 });
 
 test('changes state immediately when reduced motion is requested', () => {
@@ -195,9 +247,9 @@ test('cancels animations and clears completion callbacks on unmount', () => {
   const { unmount } = render(<Harness />);
   toggle();
   toggle();
-  const closing = getAnimation(2);
+  const closing = getAnimation(4);
   unmount();
   expect(closing.onfinish).toBeNull();
   expect(closing.cancel).toHaveBeenCalled();
-  expect(getAnimation(3).cancel).toHaveBeenCalled();
+  expect(getAnimation(5).cancel).toHaveBeenCalled();
 });

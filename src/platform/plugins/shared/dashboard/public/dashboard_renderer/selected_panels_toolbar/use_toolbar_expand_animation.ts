@@ -11,16 +11,73 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 
 type Direction = 'open' | 'close';
 
+/** Fallback timing for browsers without `linear()` easing support */
 const OPEN_DURATION = 260;
 const CLOSE_DURATION = 200;
+const EASE_OUT = 'cubic-bezier(0.2, 0, 0, 1)';
 /** The first-ever expand plays the expressive compress / overshoot version */
 const FIRST_OPEN_DURATION = 400;
-const EASE_OUT = 'cubic-bezier(0.2, 0, 0, 1)';
 const FIRST_EXPAND_STORAGE_KEY = 'dashboard:selectedPanelsToolbar:hasExpanded';
+
+/** Opening settles with ~1% overshoot (looks done at ~170ms); closing has no bounce and looks done ~15% sooner */
+const OPEN_SPRING = { stiffness: 380, damping: 30 };
+const CLOSE_SPRING = { stiffness: 1200, damping: 68 };
+/** How far the options travel with the growing edge (1 = glued to it) */
+const RIDE = 0.5;
+const OPTION_STAGGER = 20;
 
 const prefersReducedMotion = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+const supportsLinearEasing = () =>
+  typeof CSS !== 'undefined' &&
+  typeof CSS.supports === 'function' &&
+  CSS.supports('animation-timing-function', 'linear(0, 1)');
+
+interface Timing {
+  duration: number;
+  easing: string;
+}
+
+/**
+ * Simulates a spring from 0 to 1 and encodes it as a CSS `linear()` easing, so WAAPI animations
+ * get spring physics (natural settle, optional overshoot) without an animation library.
+ */
+const createSpringTiming = ({
+  stiffness,
+  damping,
+}: {
+  stiffness: number;
+  damping: number;
+}): Timing => {
+  const step = 1 / 120;
+  const samples: number[] = [];
+  let position = 0;
+  let velocity = 0;
+  let time = 0;
+  while (time < 2) {
+    velocity += (-stiffness * (position - 1) - damping * velocity) * step;
+    position += velocity * step;
+    time += step;
+    samples.push(position);
+    if (Math.abs(position - 1) < 0.001 && Math.abs(velocity) < 0.01) break;
+  }
+  // ~60 points per second is plenty for a smooth curve
+  const points = samples.filter((_, i) => i % 2 === 1).map((value) => value.toFixed(4));
+  return {
+    duration: Math.round(time * 1000),
+    easing: `linear(0, ${points.join(', ')}, 1)`,
+  };
+};
+
+const getTimings = (): { open: Timing; close: Timing } =>
+  supportsLinearEasing()
+    ? { open: createSpringTiming(OPEN_SPRING), close: createSpringTiming(CLOSE_SPRING) }
+    : {
+        open: { duration: OPEN_DURATION, easing: EASE_OUT },
+        close: { duration: CLOSE_DURATION, easing: EASE_OUT },
+      };
 
 const hasExpandedBefore = () => {
   try {
@@ -44,18 +101,27 @@ const getClipTop = (element: HTMLElement) => {
   return match ? Number(match[1]) : 0;
 };
 
+const getVisualState = (element: Element) => {
+  const style = getComputedStyle(element);
+  return {
+    opacity: style.opacity === '' ? 1 : Number(style.opacity),
+    filter: style.filter && style.filter !== 'none' ? style.filter : 'blur(0px)',
+    transform: style.transform && style.transform !== 'none' ? style.transform : undefined,
+  };
+};
+
 /**
  * Expands the toolbar upward into a larger panel while keeping its bottom edge anchored.
  *
- * The frame (white surface + content) is always laid out at its natural size and revealed with a
- * `clip-path` that grows from the bottom edge, so nothing is resized per frame. The shadow is a
- * `drop-shadow` on an ancestor, which follows the clipped shape.
+ * - The frame (white surface + content) is laid out at its natural size and revealed with a
+ *   `clip-path` growing from the bottom edge, driven by a spring. Only the height animates.
+ * - The extra options ride up with the growing edge (instead of being uncovered in place) and
+ *   fade in one after another.
+ * - The shadow is a `drop-shadow` on an ancestor, which follows the clipped shape.
  *
- * - `frameRef`: the clipped wrapper around the surface and the content.
- * - `moreRef`: the extra options shown when expanded. They stay mounted while closing so they can
- *   fade out, but are made inert.
- *
- * Opening and closing can be interrupted: each one starts from the current visual state.
+ * `frameRef` is the clipped wrapper, `moreRef` the extra options. The options stay mounted while
+ * closing so they can fade out, but are made inert. Opening and closing can be interrupted: each
+ * one starts from the current visual state.
  */
 export const useToolbarExpandAnimation = () => {
   const frameRef = useRef<HTMLDivElement | null>(null);
@@ -68,42 +134,31 @@ export const useToolbarExpandAnimation = () => {
     direction: Direction;
     /** visible height of the frame at the moment of the toggle */
     fromHeight: number;
-    moreOpacity: number;
-    moreTransform: string;
-    moreFilter: string;
+    moreTransform?: string;
+    options: Array<ReturnType<typeof getVisualState>>;
   } | null>(null);
-  const frameAnimationRef = useRef<Animation | null>(null);
-  const moreAnimationRef = useRef<Animation | null>(null);
+  const animationsRef = useRef<Animation[]>([]);
 
   const cancelAnimations = useCallback(() => {
-    for (const animation of [frameAnimationRef.current, moreAnimationRef.current]) {
-      if (animation) {
-        animation.onfinish = null;
-        animation.cancel();
-      }
+    for (const animation of animationsRef.current) {
+      animation.onfinish = null;
+      animation.cancel();
     }
-    frameAnimationRef.current = null;
-    moreAnimationRef.current = null;
+    animationsRef.current = [];
   }, []);
 
   const toggle = useCallback(() => {
     const frame = frameRef.current;
     const more = moreRef.current;
     const direction: Direction = isExpanded ? 'close' : 'open';
-    const moreStyle = more ? getComputedStyle(more) : null;
 
     // Read animated values before cancellation restores the underlying styles.
     pendingRef.current = frame
       ? {
           direction,
           fromHeight: frame.getBoundingClientRect().height - getClipTop(frame),
-          moreOpacity: moreStyle ? Number(moreStyle.opacity) : 0,
-          moreTransform:
-            moreStyle?.transform && moreStyle.transform !== 'none'
-              ? moreStyle.transform
-              : 'translateY(4px)',
-          moreFilter:
-            moreStyle?.filter && moreStyle.filter !== 'none' ? moreStyle.filter : 'blur(4px)',
+          moreTransform: more ? getVisualState(more).transform : undefined,
+          options: more ? Array.from(more.children).map(getVisualState) : [],
         }
       : null;
     cancelAnimations();
@@ -128,70 +183,90 @@ export const useToolbarExpandAnimation = () => {
       return;
     }
 
-    const { width, height: fullHeight } = frame.getBoundingClientRect();
+    const fullHeight = frame.getBoundingClientRect().height;
     const toHeight = isOpening ? fullHeight : fullHeight - more.offsetHeight;
     const radius = getComputedStyle(frame).borderTopLeftRadius || '0px';
-    const clip = (visibleHeight: number, side = 0) =>
-      `inset(${Math.max(0, fullHeight - visibleHeight)}px ${side}px 0px ${side}px round ${radius})`;
+    const clip = (visibleHeight: number) =>
+      `inset(${Math.max(0, fullHeight - visibleHeight)}px 0px 0px 0px round ${radius})`;
     const lerp = (progress: number) =>
       pending.fromHeight + (toHeight - pending.fromHeight) * progress;
+    // the options sit this far below their resting place when the edge is at `visibleHeight`
+    const ride = (visibleHeight: number) =>
+      `translateY(${(RIDE * Math.max(0, fullHeight - visibleHeight)).toFixed(2)}px)`;
 
-    const isFirstExpand = isOpening && pending.moreOpacity === 0 && !hasExpandedBefore();
+    const isFirstExpand =
+      isOpening && pending.options.every((option) => option.opacity === 0) && !hasExpandedBefore();
     if (isOpening) rememberExpanded();
 
-    let frameKeyframes: Keyframe[];
-    let duration: number;
-    if (isFirstExpand) {
-      // compress, expand quickly, overshoot slightly, then settle
-      frameKeyframes = [
-        { offset: 0, clipPath: clip(lerp(0)), transform: 'none' },
-        {
-          offset: 0.14,
-          clipPath: clip(pending.fromHeight * 0.64, width * 0.02),
-          transform: 'none',
-        },
-        { offset: 0.29, clipPath: clip(pending.fromHeight * 1.2), transform: 'none' },
-        { offset: 0.375, clipPath: clip(lerp(0.25)), transform: 'none' },
-        { offset: 0.5, clipPath: clip(lerp(0.855)), transform: 'none' },
-        { offset: 0.65, clipPath: clip(lerp(1)), transform: 'scale(1.03, 1.04)' },
-        { offset: 0.825, clipPath: clip(lerp(1)), transform: 'none' },
-        { offset: 1, clipPath: clip(lerp(1)), transform: 'none' },
-      ].map((keyframe) => ({ ...keyframe, easing: 'ease-in-out' }));
-      duration = FIRST_OPEN_DURATION;
-    } else {
-      frameKeyframes = [{ clipPath: clip(lerp(0)) }, { clipPath: clip(lerp(1)) }];
-      duration = isOpening ? OPEN_DURATION : CLOSE_DURATION;
-    }
+    const timings = getTimings();
+    const timing: Timing = isFirstExpand
+      ? { duration: FIRST_OPEN_DURATION, easing: 'linear' }
+      : isOpening
+      ? timings.open
+      : timings.close;
 
+    const frameKeyframes: Keyframe[] = isFirstExpand
+      ? // compress, expand quickly, overshoot slightly, then settle
+        [
+          { offset: 0, clipPath: clip(lerp(0)), transform: 'none' },
+          {
+            offset: 0.14,
+            clipPath: clip(pending.fromHeight * 0.64),
+            transform: 'none',
+          },
+          { offset: 0.29, clipPath: clip(pending.fromHeight * 1.2), transform: 'none' },
+          { offset: 0.375, clipPath: clip(lerp(0.25)), transform: 'none' },
+          { offset: 0.5, clipPath: clip(lerp(0.855)), transform: 'none' },
+          { offset: 0.65, clipPath: clip(lerp(1)), transform: 'scale(1.03, 1.04)' },
+          { offset: 0.825, clipPath: clip(lerp(1)), transform: 'none' },
+          { offset: 1, clipPath: clip(lerp(1)), transform: 'none' },
+        ].map((keyframe) => ({ ...keyframe, easing: 'ease-in-out' }))
+      : [{ clipPath: clip(lerp(0)) }, { clipPath: clip(lerp(1)) }];
+
+    const animations: Animation[] = [];
     const frameAnimation = frame.animate(frameKeyframes, {
-      duration,
-      easing: isFirstExpand ? 'linear' : EASE_OUT,
+      ...timing,
       // hold the compact clip until the extra options are unmounted
       fill: isOpening ? 'none' : 'forwards',
     });
-    frameAnimationRef.current = frameAnimation;
+    animations.push(frameAnimation);
 
-    // the options materialize (opacity + rise + blur that clears) and leave quieter and sharp
-    moreAnimationRef.current = more.animate(
-      [
-        {
-          opacity: pending.moreOpacity,
-          transform: pending.moreTransform,
-          filter: isOpening ? pending.moreFilter : 'blur(0px)',
-        },
-        {
-          opacity: isOpening ? 1 : 0,
-          transform: isOpening ? 'none' : 'translateY(4px)',
-          filter: 'blur(0px)',
-        },
-      ],
-      {
-        duration: isOpening ? 160 : 120,
-        delay: isFirstExpand ? 100 : 0,
-        easing: EASE_OUT,
-        fill: isOpening ? 'backwards' : 'both',
-      }
+    // the options ride with the edge, in lockstep with the frame
+    animations.push(
+      more.animate(
+        [
+          { transform: pending.moreTransform ?? ride(pending.fromHeight) },
+          { transform: isOpening ? 'none' : ride(toHeight) },
+        ],
+        { ...timing, fill: isOpening ? 'backwards' : 'forwards' }
+      )
     );
+
+    // each option materializes (opacity + blur that clears), one after another, and leaves
+    // quieter: together, faster and sharp
+    Array.from(more.children).forEach((option, index) => {
+      const from = pending.options[index] ?? { opacity: 0, filter: 'blur(4px)' };
+      const isFresh = isOpening && from.opacity === 0;
+      animations.push(
+        option.animate(
+          [
+            {
+              opacity: from.opacity,
+              filter: isFresh ? 'blur(4px)' : isOpening ? from.filter : 'blur(0px)',
+            },
+            { opacity: isOpening ? 1 : 0, filter: 'blur(0px)' },
+          ],
+          {
+            duration: isOpening ? 160 : 120,
+            delay: isFresh ? index * OPTION_STAGGER + (isFirstExpand ? 100 : 0) : 0,
+            easing: EASE_OUT,
+            fill: isOpening ? 'backwards' : 'both',
+          }
+        )
+      );
+    });
+
+    animationsRef.current = animations;
     if (!isOpening) {
       frameAnimation.onfinish = () => setIsMoreMounted(false);
     }
