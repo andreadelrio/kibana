@@ -23,14 +23,18 @@ const getAddPanelsToChatAction = async (): Promise<Action<AddPanelsToChatActionC
   )) as Action<AddPanelsToChatActionContext>;
 
 /**
- * Returns an `execute` function that sends the given panels to the AI chat, or `null` when AI
- * chat is not available in the current environment.
+ * `addToChat` sends the given panels to the AI chat, and is `null` when AI chat is not available in
+ * the current environment. `isResolved` is `false` until the first availability check finishes, so
+ * callers can avoid showing a toolbar whose buttons are about to change.
  */
 export const useAddPanelsToChatAction = (
   dashboardApi: DashboardApi,
   panelIds: Set<string>
-): { execute: () => Promise<void> } | null => {
+): { addToChat: { execute: () => Promise<void> } | null; isResolved: boolean } => {
   const [action, setAction] = useState<Action<AddPanelsToChatActionContext> | null>(null);
+  const [isResolved, setIsResolved] = useState(
+    () => !uiActionsService.hasAction(ADD_PANELS_TO_CHAT_ACTION_ID)
+  );
   const context = useMemo(
     () => ({
       dashboardApi,
@@ -43,6 +47,7 @@ export const useAddPanelsToChatAction = (
   useEffect(() => {
     if (!uiActionsService.hasAction(ADD_PANELS_TO_CHAT_ACTION_ID)) {
       setAction(null);
+      setIsResolved(true);
       return;
     }
 
@@ -57,13 +62,17 @@ export const useAddPanelsToChatAction = (
         }),
         catchError(() => of(null))
       )
-      .subscribe(setAction);
+      .subscribe((nextAction) => {
+        setAction(nextAction);
+        setIsResolved(true);
+      });
 
     return () => subscription.unsubscribe();
   }, [context]);
 
-  return useMemo(
+  const addToChat = useMemo(
     () => (action ? { execute: () => action.execute(context) } : null),
     [action, context]
   );
+  return { addToChat, isResolved };
 };

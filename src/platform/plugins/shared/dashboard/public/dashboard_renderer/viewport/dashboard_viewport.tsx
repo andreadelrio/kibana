@@ -20,6 +20,7 @@ import { DashboardGrid } from '../grid';
 import { DashboardEmptyScreen } from './empty_screen/dashboard_empty_screen';
 import { DashboardKeyboardShortcuts } from './dashboard_keyboard_shortcuts';
 import { SelectedPanelsToolbar } from '../selected_panels_toolbar/selected_panels_toolbar';
+import { useSelectedPanelsToolbarPresence } from '../selected_panels_toolbar/use_selected_panels_toolbar_presence';
 import { useKeyboardShortcutHighlight } from './keyboard_shortcut_highlight_context';
 
 export const DashboardViewport = () => {
@@ -45,6 +46,8 @@ export const DashboardViewport = () => {
     dashboardApi.fullScreenMode$,
     dashboardApi.selectedPanelIds$
   );
+  const toolbarPresence = useSelectedPanelsToolbarPresence(selectedPanelIds);
+
   const onExit = useCallback(() => {
     dashboardApi.setFullScreenMode(false);
   }, [dashboardApi]);
@@ -115,10 +118,14 @@ export const DashboardViewport = () => {
       )}
       {viewMode === 'edit' && (
         <EuiPortal>
-          {selectedPanelIds.size > 0 ? (
-            <SelectedPanelsToolbar selectedPanelIds={selectedPanelIds} />
+          {toolbarPresence.showToolbar ? (
+            <SelectedPanelsToolbar
+              selectedPanelIds={toolbarPresence.toolbarPanelIds}
+              isExiting={toolbarPresence.isExiting}
+              skipEntrance={toolbarPresence.skipEntrance}
+            />
           ) : (
-            <DashboardKeyboardShortcuts />
+            <DashboardKeyboardShortcuts animateIn={toolbarPresence.animateShortcutsIn} />
           )}
         </EuiPortal>
       )}

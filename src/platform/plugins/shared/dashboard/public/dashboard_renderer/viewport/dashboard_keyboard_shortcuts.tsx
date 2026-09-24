@@ -8,12 +8,28 @@
  */
 
 import React, { useMemo } from 'react';
-import { css } from '@emotion/react';
+import { css, keyframes } from '@emotion/react';
 import { EuiFlexGroup, EuiFlexItem, useEuiTheme } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { useKeyboardShortcutHighlight } from './keyboard_shortcut_highlight_context';
 
-export const DashboardKeyboardShortcuts = () => {
+const shortcutsFadeIn = keyframes`
+  from {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+`;
+
+export const DashboardKeyboardShortcuts = ({
+  animateIn = false,
+}: {
+  /** fades the bar in, e.g. when it replaces the selected panels toolbar */
+  animateIn?: boolean;
+}) => {
   const { euiTheme } = useEuiTheme();
   const { highlightedAction } = useKeyboardShortcutHighlight();
 
@@ -89,6 +105,10 @@ export const DashboardKeyboardShortcuts = () => {
       left: 50%;
       transform: translateX(-50%);
       z-index: ${euiTheme.levels.flyout};
+      ${animateIn ? `animation: ${shortcutsFadeIn} 150ms cubic-bezier(0.2, 0, 0, 1);` : ''}
+      @media (prefers-reduced-motion: reduce) {
+        animation: none;
+      }
       padding: ${euiTheme.size.s} ${euiTheme.size.m};
       background: ${euiTheme.colors.emptyShade};
       border: 0px solid ${euiTheme.border.color};
@@ -112,7 +132,7 @@ export const DashboardKeyboardShortcuts = () => {
         margin-left: 0;
       }
     `,
-    [euiTheme]
+    [euiTheme, animateIn]
   );
 
   const itemStyles = useMemo(
@@ -174,9 +194,7 @@ export const DashboardKeyboardShortcuts = () => {
               <span
                 css={[itemStyles, highlightedAction === item.id && itemHighlightStyles]}
                 data-test-subj={
-                  highlightedAction === item.id
-                    ? 'dashboardKeyboardShortcutHighlighted'
-                    : undefined
+                  highlightedAction === item.id ? 'dashboardKeyboardShortcutHighlighted' : undefined
                 }
               >
                 {item.title} {item.description}
