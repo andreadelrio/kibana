@@ -123,10 +123,6 @@ export const DashboardGrid = () => {
   const handleGridClick = useCallback(
     (e: React.MouseEvent) => {
       if (viewMode !== 'edit') return;
-      if (justDidSelectionDragRef.current) {
-        justDidSelectionDragRef.current = false;
-        return;
-      }
       if ((selectedPanelIds?.size ?? 0) === 0) return;
       if ((e.target as HTMLElement).closest('[data-test-subj="dashboardPanel"]')) return;
       dashboardApi.setSelectedPanelIds(new Set());
@@ -134,9 +130,23 @@ export const DashboardGrid = () => {
     [viewMode, selectedPanelIds, dashboardApi]
   );
 
+  // The click that ends a selection drag must not reach the panel, or its Shift+click handler
+  // would immediately toggle off the panel the drag just selected
+  const handleGridClickCapture = useCallback((e: React.MouseEvent) => {
+    if (!justDidSelectionDragRef.current) return;
+    justDidSelectionDragRef.current = false;
+    e.stopPropagation();
+  }, []);
+
   const handleGridMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (viewMode !== 'edit' || !e.shiftKey) return;
+      // keep native Shift+click behavior (extending the text selection) inside editable fields
+      if ((e.target as HTMLElement).closest('input, textarea, [contenteditable="true"]')) return;
+      // prevent the browser from extending the text selection across the page
+      e.preventDefault();
+      window.getSelection()?.removeAllRanges();
+      justDidSelectionDragRef.current = false;
       const start = { x: e.clientX, y: e.clientY };
 
       const onMove = (moveEvent: MouseEvent) => {
@@ -378,8 +388,10 @@ export const DashboardGrid = () => {
             'dshLayout-isMaximizedPanel': expandedPanelId !== undefined,
           })}
           css={styles.dashboard}
-          onMouseDown={handleGridMouseDown}
+          // capture phase, so area selection starts even if panel content stops mousedown
+          onMouseDownCapture={handleGridMouseDown}
           onClick={handleGridClick}
+          onClickCapture={handleGridClickCapture}
         >
           {memoizedGridLayout}
         </div>

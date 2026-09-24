@@ -186,15 +186,32 @@ export const DashboardGridItem = React.forwardRef<HTMLDivElement, Props>(
 
     const panelContextMenu = useContext(PanelContextMenuContext);
 
-    const handlePanelClick = useCallback(
+    // In edit mode Shift+click / Shift+drag belong to the dashboard's panel selection. They are
+    // handled in the capture phase so panel content (e.g. Lens Metric, which stops click
+    // propagation, or maps and charts with their own Shift gestures) never receives them.
+    const isSelectionGesture = useCallback(
+      (e: React.MouseEvent) =>
+        viewMode === 'edit' &&
+        e.shiftKey &&
+        !(e.target as HTMLElement).closest('input, textarea, [contenteditable="true"]'),
+      [viewMode]
+    );
+
+    const handlePanelMouseDownCapture = useCallback(
       (e: React.MouseEvent) => {
-        if (e.shiftKey) {
-          e.preventDefault();
-          e.stopPropagation();
-          dashboardApi.togglePanelSelection(id);
-        }
+        if (isSelectionGesture(e)) e.stopPropagation();
       },
-      [dashboardApi, id]
+      [isSelectionGesture]
+    );
+
+    const handlePanelClickCapture = useCallback(
+      (e: React.MouseEvent) => {
+        if (!isSelectionGesture(e)) return;
+        e.preventDefault();
+        e.stopPropagation();
+        dashboardApi.togglePanelSelection(id);
+      },
+      [isSelectionGesture, dashboardApi, id]
     );
 
     const handleContextMenu = useCallback(
@@ -215,7 +232,8 @@ export const DashboardGridItem = React.forwardRef<HTMLDivElement, Props>(
         data-test-subj="dashboardPanel"
         id={`panel-${id}`}
         ref={ref}
-        onClick={handlePanelClick}
+        onMouseDownCapture={handlePanelMouseDownCapture}
+        onClickCapture={handlePanelClickCapture}
         onContextMenu={handleContextMenu}
         {...rest}
       >
