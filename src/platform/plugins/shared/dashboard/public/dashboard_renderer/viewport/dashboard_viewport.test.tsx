@@ -16,6 +16,7 @@ import { DashboardContext } from '../../dashboard_api/use_dashboard_api';
 import { DashboardInternalContext } from '../../dashboard_api/use_dashboard_internal_api';
 import { buildMockDashboardApi, getMockPanels } from '../../mocks';
 import { DashboardViewport } from './dashboard_viewport';
+import { KeyboardShortcutHighlightProvider } from './keyboard_shortcut_highlight_context';
 import type { DashboardInternalApi } from '../../dashboard_api/types';
 
 jest.mock('../grid', () => {
@@ -40,7 +41,9 @@ const renderDashboardViewport = async (internalApiOverrides?: Partial<DashboardI
             ...internalApiOverrides,
           }}
         >
-          <DashboardViewport />
+          <KeyboardShortcutHighlightProvider>
+            <DashboardViewport />
+          </KeyboardShortcutHighlightProvider>
         </DashboardInternalContext.Provider>
       </DashboardContext.Provider>
     </EuiThemeProvider>
