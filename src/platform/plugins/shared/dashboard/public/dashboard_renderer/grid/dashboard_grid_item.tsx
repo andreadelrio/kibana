@@ -14,14 +14,7 @@ import { EmbeddableRenderer } from '@kbn/embeddable-plugin/public';
 import type { DefaultEmbeddableApi } from '@kbn/embeddable-plugin/public';
 import { apiCanCancelRequests, useBatchedPublishingSubjects } from '@kbn/presentation-publishing';
 import classNames from 'classnames';
-import React, {
-  useCallback,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-} from 'react';
+import React, { useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
 import { useDashboardApi } from '../../dashboard_api/use_dashboard_api';
 import { useDashboardInternalApi } from '../../dashboard_api/use_dashboard_internal_api';
@@ -216,13 +209,14 @@ export const DashboardGridItem = React.forwardRef<HTMLDivElement, Props>(
 
     const handleContextMenu = useCallback(
       (e: React.MouseEvent) => {
-        if (viewMode === 'edit' && panelContextMenu) {
+        // the bulk actions menu is only for selected panels; otherwise keep the browser's menu
+        if (viewMode === 'edit' && panelContextMenu && selectedPanelIds.has(id)) {
           e.preventDefault();
           e.stopPropagation();
           panelContextMenu.openContextMenu(id, { x: e.clientX, y: e.clientY });
         }
       },
-      [viewMode, panelContextMenu, id]
+      [viewMode, panelContextMenu, selectedPanelIds, id]
     );
 
     return (

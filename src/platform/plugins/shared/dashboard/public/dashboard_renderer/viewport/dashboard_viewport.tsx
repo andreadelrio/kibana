@@ -18,15 +18,12 @@ import { useDashboardApi } from '../../dashboard_api/use_dashboard_api';
 import { useDashboardInternalApi } from '../../dashboard_api/use_dashboard_internal_api';
 import { DashboardGrid } from '../grid';
 import { DashboardEmptyScreen } from './empty_screen/dashboard_empty_screen';
-import { DashboardKeyboardShortcuts } from './dashboard_keyboard_shortcuts';
 import { SelectedPanelsToolbar } from '../selected_panels_toolbar/selected_panels_toolbar';
 import { useSelectedPanelsToolbarPresence } from '../selected_panels_toolbar/use_selected_panels_toolbar_presence';
-import { useKeyboardShortcutHighlight } from './keyboard_shortcut_highlight_context';
 
 export const DashboardViewport = () => {
   const dashboardApi = useDashboardApi();
   const dashboardInternalApi = useDashboardInternalApi();
-  const { triggerHighlight } = useKeyboardShortcutHighlight();
   const [
     dashboardTitle,
     description,
@@ -64,24 +61,18 @@ export const DashboardViewport = () => {
 
       const isCopy = (e.metaKey || e.ctrlKey) && e.key === 'c';
       const isPaste = (e.metaKey || e.ctrlKey) && e.key === 'v';
-      const isUndo = (e.metaKey || e.ctrlKey) && e.key === 'z' && !e.shiftKey;
       if (isCopy) {
         e.preventDefault();
         dashboardApi.copySelectedPanels();
-        triggerHighlight('copy');
       } else if (isPaste) {
         e.preventDefault();
         dashboardApi.runPastePanels();
-        triggerHighlight('paste');
-      } else if (isUndo) {
-        // The undo itself is handled by the dashboard history manager's keydown listener
-        triggerHighlight('undo');
       }
     };
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [viewMode, dashboardApi, triggerHighlight]);
+  }, [viewMode, dashboardApi]);
 
   const { panelCount, visiblePanelCount, sectionCount } = useMemo(() => {
     const panels = Object.values(layout.panels);
@@ -118,14 +109,12 @@ export const DashboardViewport = () => {
       )}
       {viewMode === 'edit' && (
         <EuiPortal>
-          {toolbarPresence.showToolbar ? (
+          {toolbarPresence.showToolbar && (
             <SelectedPanelsToolbar
               selectedPanelIds={toolbarPresence.toolbarPanelIds}
               isExiting={toolbarPresence.isExiting}
               skipEntrance={toolbarPresence.skipEntrance}
             />
-          ) : (
-            <DashboardKeyboardShortcuts animateIn={toolbarPresence.animateShortcutsIn} />
           )}
         </EuiPortal>
       )}

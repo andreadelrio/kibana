@@ -37,7 +37,6 @@ describe('useSelectedPanelsToolbarPresence', () => {
 
     act(() => jest.advanceTimersByTime(TOOLBAR_EXIT_DURATION));
     expect(result.current.showToolbar).toBe(false);
-    expect(result.current.animateShortcutsIn).toBe(true);
   });
 
   test('hides instantly when the selection is cleared from the keyboard', () => {
@@ -45,7 +44,6 @@ describe('useSelectedPanelsToolbarPresence', () => {
     fireEvent.keyDown(document, { key: 'Escape' });
     rerender({ ids: none });
     expect(result.current.showToolbar).toBe(false);
-    expect(result.current.animateShortcutsIn).toBe(false);
   });
 
   test('holding a modifier for Shift+click still counts as a pointer interaction', () => {
