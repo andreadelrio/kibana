@@ -272,12 +272,88 @@ export const useToolbarExpandAnimation = () => {
     }
   }, [isExpanded]);
 
-  // once the extra options are gone, the frame can follow the content size again
+  // once the extra options are gone, the frame can follow the content size again (declared before
+  // the content swap effect, so a swap that also collapses keeps its own animation)
   useLayoutEffect(() => {
     if (!isMoreMounted) cancelAnimations();
   }, [cancelAnimations, isMoreMounted]);
 
+  // Swapping the frame's content (e.g. the share colors picker) changes its height in one render.
+  // Animate the height from the previous visible size so it grows / shrinks instead of jumping.
+  // This is a rare, one-off change, so animating height here is an acceptable layout cost; the
+  // frame is bottom-aligned with overflow hidden, so the top edge moves and the bottom stays put.
+  const swapFromHeightRef = useRef<number | null>(null);
+  const [swapCount, setSwapCount] = useState(0);
+
+  const animateContentSwap = useCallback(
+    (update: () => void) => {
+      const frame = frameRef.current;
+      swapFromHeightRef.current = frame
+        ? frame.getBoundingClientRect().height - getClipTop(frame)
+        : null;
+      cancelAnimations();
+      update();
+      setSwapCount((count) => count + 1);
+    },
+    [cancelAnimations]
+  );
+
+  /** Leaves the expanded state without playing the close animation (e.g. inside a content swap) */
+  const collapseInstantly = useCallback(() => {
+    setIsExpanded(false);
+    setIsMoreMounted(false);
+  }, []);
+
+  useLayoutEffect(() => {
+    const fromHeight = swapFromHeightRef.current;
+    swapFromHeightRef.current = null;
+    const frame = frameRef.current;
+    if (fromHeight === null || !frame) return;
+    if (typeof frame.animate !== 'function' || prefersReducedMotion()) return;
+
+    const toHeight = frame.getBoundingClientRect().height;
+    const animations: Animation[] = [];
+    if (Math.abs(toHeight - fromHeight) >= 1) {
+      animations.push(
+        frame.animate(
+          [
+            { height: `${fromHeight}px`, overflow: 'hidden' },
+            { height: `${toHeight}px`, overflow: 'hidden' },
+          ],
+          getTimings().open
+        )
+      );
+    }
+    // the new content fades in once the frame starts moving
+    const content = frame.lastElementChild;
+    if (content) {
+      animations.push(
+        content.animate(
+          [
+            { opacity: 0, filter: 'blur(2px)' },
+            { opacity: 1, filter: 'blur(0px)' },
+          ],
+          {
+            duration: 140,
+            delay: 40,
+            easing: EASE_OUT,
+            fill: 'backwards',
+          }
+        )
+      );
+    }
+    animationsRef.current = animations;
+  }, [swapCount]);
+
   useEffect(() => cancelAnimations, [cancelAnimations]);
 
-  return { isExpanded, isMoreMounted, toggle, frameRef, moreRef };
+  return {
+    isExpanded,
+    isMoreMounted,
+    toggle,
+    animateContentSwap,
+    collapseInstantly,
+    frameRef,
+    moreRef,
+  };
 };

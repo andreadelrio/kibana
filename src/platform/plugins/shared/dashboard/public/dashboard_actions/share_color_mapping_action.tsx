@@ -8,7 +8,11 @@
  */
 
 import type { EmbeddableApiContext, HasParentApi, HasUniqueId } from '@kbn/presentation-publishing';
-import { apiHasParentApi, apiHasUniqueId, getInheritedViewMode } from '@kbn/presentation-publishing';
+import {
+  apiHasParentApi,
+  apiHasUniqueId,
+  getInheritedViewMode,
+} from '@kbn/presentation-publishing';
 import type { Action } from '@kbn/ui-actions-plugin/public';
 import { IncompatibleActionError } from '@kbn/ui-actions-plugin/public';
 import { dashboardShareColorMappingActionStrings } from './_dashboard_actions_strings';
@@ -28,10 +32,10 @@ interface AttributesWithVisualization {
   };
 }
 
-type ShareColorMappingParentApi = {
+interface ShareColorMappingParentApi {
   selectedPanelIds$?: { getValue(): Set<string> };
   getChildApi?(id: string): Promise<unknown>;
-};
+}
 
 type ShareColorMappingEmbeddableApi = HasUniqueId &
   HasParentApi<ShareColorMappingParentApi> & {
@@ -47,7 +51,8 @@ function isLensWithColorMapping(api: unknown): api is ShareColorMappingEmbeddabl
     apiHasParentApi(api) &&
     typeof a.getFullAttributes === 'function' &&
     typeof a.updateAttributes === 'function' &&
-    typeof (a.parentApi as ShareColorMappingParentApi)?.selectedPanelIds$?.getValue === 'function' &&
+    typeof (a.parentApi as ShareColorMappingParentApi)?.selectedPanelIds$?.getValue ===
+      'function' &&
     typeof (a.parentApi as ShareColorMappingParentApi)?.getChildApi === 'function'
   );
 }
@@ -92,6 +97,42 @@ function applyColorMappingToAttributes(
   };
 }
 
+interface PanelWithColorMapping {
+  getFullAttributes(): AttributesWithVisualization | undefined;
+  updateAttributes(attrs: AttributesWithVisualization): void;
+}
+
+/**
+ * Whether a panel can take part in sharing colors: a Lens chart whose visualization has layers
+ * with palette / color mapping config.
+ */
+export function hasColorMapping(api: unknown): api is PanelWithColorMapping {
+  const panel = api as Partial<PanelWithColorMapping>;
+  if (typeof panel?.getFullAttributes !== 'function') return false;
+  if (typeof panel?.updateAttributes !== 'function') return false;
+  return Boolean(extractColorMappingFromAttributes(panel.getFullAttributes())?.length);
+}
+
+/**
+ * Copies the source panel's palette and color mapping onto each target, layer by layer.
+ * Targets without color-mapped layers are skipped. Returns how many panels were updated.
+ */
+export function copyColorMapping(source: unknown, targets: unknown[]): number {
+  if (!hasColorMapping(source)) return 0;
+  const sourceLayerConfigs = extractColorMappingFromAttributes(source.getFullAttributes());
+  if (!sourceLayerConfigs?.length) return 0;
+
+  let updated = 0;
+  for (const target of targets) {
+    if (target === source || !hasColorMapping(target)) continue;
+    const targetAttributes = target.getFullAttributes();
+    if (!targetAttributes?.state?.visualization?.layers?.length) continue;
+    target.updateAttributes(applyColorMappingToAttributes(targetAttributes, sourceLayerConfigs));
+    updated++;
+  }
+  return updated;
+}
+
 export class ShareColorMappingAction implements Action<EmbeddableApiContext> {
   public readonly type = ACTION_SHARE_COLOR_MAPPING;
   public readonly id = ACTION_SHARE_COLOR_MAPPING;
@@ -120,31 +161,15 @@ export class ShareColorMappingAction implements Action<EmbeddableApiContext> {
   public async execute({ embeddable }: EmbeddableApiContext) {
     if (!isLensWithColorMapping(embeddable)) throw new IncompatibleActionError();
 
-    const sourceAttributes = embeddable.getFullAttributes?.();
-    const sourceLayerConfigs = extractColorMappingFromAttributes(sourceAttributes);
-    if (!sourceLayerConfigs?.length) return;
-
     const parent = embeddable.parentApi as ShareColorMappingParentApi;
     const selectedIds = parent.selectedPanelIds$?.getValue();
-    if (!selectedIds || selectedIds.size < 2) return;
+    if (!selectedIds || selectedIds.size < 2 || !parent.getChildApi) return;
 
-    const getChildApi = parent.getChildApi;
-    if (!getChildApi) return;
-
-    for (const panelId of selectedIds) {
-      if (panelId === embeddable.uuid) continue;
-
-      const childApi = await getChildApi(panelId);
-      const target = childApi as ShareColorMappingEmbeddableApi;
-      if (typeof target?.getFullAttributes !== 'function' || typeof target?.updateAttributes !== 'function') {
-        continue;
-      }
-
-      const targetAttributes = target.getFullAttributes?.();
-      if (!targetAttributes?.state?.visualization?.layers?.length) continue;
-
-      const updated = applyColorMappingToAttributes(targetAttributes, sourceLayerConfigs);
-      target.updateAttributes(updated);
-    }
+    const targets = await Promise.all(
+      Array.from(selectedIds)
+        .filter((panelId) => panelId !== embeddable.uuid)
+        .map((panelId) => parent.getChildApi!(panelId))
+    );
+    copyColorMapping(embeddable, targets);
   }
 }
