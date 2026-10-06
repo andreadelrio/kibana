@@ -18,6 +18,7 @@ import {
   EuiPopover,
   EuiText,
   keys,
+  useEuiTheme,
   type UseEuiTheme,
 } from '@elastic/eui';
 import { Global, css, keyframes } from '@emotion/react';
@@ -46,7 +47,6 @@ import {
   EASE_OUT,
   FloatingToolbar,
   FloatingToolbarButton,
-  FloatingToolbarExpandButton,
   floatingToolbarStyles,
 } from '../floating_toolbar/floating_toolbar';
 import {
@@ -116,6 +116,10 @@ const strings = {
     i18n.translate('dashboard.selectedPanelsToolbar.deletePanels', {
       defaultMessage: 'Delete panels',
     }),
+  getMoreOptions: () =>
+    i18n.translate('dashboard.selectedPanelsToolbar.moreOptions', {
+      defaultMessage: 'More options',
+    }),
 };
 
 /** How long the toolbar waits for the "Add to chat" availability check before showing anyway */
@@ -132,17 +136,11 @@ export const SelectedPanelsToolbar = ({
   skipEntrance = false,
 }: SelectedPanelsToolbarProps) => {
   const dashboardApi = useDashboardApi();
+  const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(toolbarStyles);
   const shared = useMemoCss(floatingToolbarStyles);
-  const {
-    isExpanded,
-    isMoreMounted,
-    toggle,
-    animateContentSwap,
-    collapseInstantly,
-    frameRef,
-    moreRef,
-  } = useToolbarExpandAnimation();
+  const { animateContentSwap, frameRef } = useToolbarExpandAnimation();
+  const [isMorePopoverOpen, setIsMorePopoverOpen] = useState(false);
   const [isLayoutPopoverOpen, setIsLayoutPopoverOpen] = useState(false);
 
   const { duplicate, remove, group, canGroup, applyLayout, copyToDashboard, canCopyToDashboard } =
@@ -237,6 +235,7 @@ export const SelectedPanelsToolbar = ({
 
   const openColorSourcePicker = useCallback(() => {
     const width = frameRef.current?.getBoundingClientRect().width;
+    setIsMorePopoverOpen(false);
     animateContentSwap(() => {
       setPickerWidth(width);
       setIsPickingColorSource(true);
@@ -244,13 +243,12 @@ export const SelectedPanelsToolbar = ({
   }, [animateContentSwap, frameRef]);
 
   const closeColorSourcePicker = useCallback(
-    ({ collapse }: { collapse: boolean }) =>
+    () =>
       animateContentSwap(() => {
         setIsPickingColorSource(false);
         setPickerWidth(undefined);
-        if (collapse) collapseInstantly();
       }),
-    [animateContentSwap, collapseInstantly]
+    [animateContentSwap]
   );
 
   const applyColorsFrom = useCallback(
@@ -267,14 +265,14 @@ export const SelectedPanelsToolbar = ({
         });
       }
       // done: back to the compact toolbar
-      closeColorSourcePicker({ collapse: true });
+      closeColorSourcePicker();
     },
     [children, colorPanels, closeColorSourcePicker]
   );
 
   // the picker has nothing to offer anymore if the selection changed under it
   useEffect(() => {
-    if (isPickingColorSource && !canShareColors) closeColorSourcePicker({ collapse: false });
+    if (isPickingColorSource && !canShareColors) closeColorSourcePicker();
   }, [isPickingColorSource, canShareColors, closeColorSourcePicker]);
 
   useEffect(() => {
@@ -282,7 +280,7 @@ export const SelectedPanelsToolbar = ({
       if (e.key !== keys.ESCAPE || e.defaultPrevented) return;
       // Escape backs out of the picker instead of clearing the selection
       if (isPickingColorSource) {
-        closeColorSourcePicker({ collapse: false });
+        closeColorSourcePicker();
         return;
       }
       // let Escape close popovers, modals, flyouts and leave text fields alone
@@ -325,52 +323,12 @@ export const SelectedPanelsToolbar = ({
           <ShareColorsPicker
             panels={colorPanels}
             onApply={applyColorsFrom}
-            onCancel={() => closeColorSourcePicker({ collapse: false })}
+            onCancel={closeColorSourcePicker}
             onPreviewChange={setColorSourcePreview}
           />
         </div>
       ) : (
         <div css={shared.content}>
-          {isMoreMounted && (
-            <div
-              ref={moreRef}
-              css={[shared.more, styles.more]}
-              data-test-subj="dashboardSelectedPanelsToolbarMore"
-            >
-              <EuiContextMenuItem
-                icon="palette"
-                onClick={openColorSourcePicker}
-                disabled={!canShareColors}
-                toolTipContent={canShareColors ? undefined : strings.getShareColorsDisabled()}
-                data-test-subj="dashboardSelectedPanelsToolbarShareColors"
-              >
-                {strings.getShareColorMapping()}
-              </EuiContextMenuItem>
-              {annotationsVisibility !== 'none' && (
-                <EuiContextMenuItem
-                  icon="flag"
-                  onClick={toggleAnnotations}
-                  data-test-subj="dashboardSelectedPanelsToolbarToggleAnnotations"
-                >
-                  {/* keyed so the new label crossfades in after the toggle */}
-                  <span key={annotationsVisibility} css={styles.labelSwap}>
-                    {annotationsVisibility === 'visible'
-                      ? strings.getHideAnnotations()
-                      : strings.getShowAnnotations()}
-                  </span>
-                </EuiContextMenuItem>
-              )}
-              <EuiContextMenuItem
-                icon={<EuiIcon type="trash" color="danger" aria-hidden />}
-                onClick={remove}
-                css={styles.danger}
-                data-test-subj="dashboardSelectedPanelsToolbarRemove"
-              >
-                {strings.getDeletePanels()}
-              </EuiContextMenuItem>
-              <EuiHorizontalRule margin="xs" />
-            </div>
-          )}
           <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
             <EuiFlexItem grow={false}>
               <FloatingToolbarButton
@@ -477,11 +435,64 @@ export const SelectedPanelsToolbar = ({
             </EuiFlexItem>
             <div css={shared.separator} aria-hidden />
             <EuiFlexItem grow={false}>
-              <FloatingToolbarExpandButton
-                isExpanded={isExpanded}
-                onClick={toggle}
-                data-test-subj="dashboardSelectedPanelsToolbarToggleMore"
-              />
+              <EuiPopover
+                isOpen={isMorePopoverOpen}
+                closePopover={() => setIsMorePopoverOpen(false)}
+                anchorPosition="upRight"
+                panelPaddingSize="none"
+                hasArrow={false}
+                offset={Number.parseFloat(euiTheme.size.m)}
+                panelProps={{ css: styles.morePopover }}
+                aria-label={strings.getMoreOptions()}
+                button={
+                  <FloatingToolbarButton
+                    label={strings.getMoreOptions()}
+                    iconType="boxesVertical"
+                    onClick={() => setIsMorePopoverOpen((open) => !open)}
+                    isSelected={isMorePopoverOpen}
+                    aria-expanded={isMorePopoverOpen}
+                    data-test-subj="dashboardSelectedPanelsToolbarToggleMore"
+                  />
+                }
+              >
+                <EuiContextMenuPanel data-test-subj="dashboardSelectedPanelsToolbarMore">
+                  <EuiContextMenuItem
+                    icon="palette"
+                    onClick={openColorSourcePicker}
+                    disabled={!canShareColors}
+                    toolTipContent={canShareColors ? undefined : strings.getShareColorsDisabled()}
+                    data-test-subj="dashboardSelectedPanelsToolbarShareColors"
+                  >
+                    {strings.getShareColorMapping()}
+                  </EuiContextMenuItem>
+                  {annotationsVisibility !== 'none' && (
+                    <EuiContextMenuItem
+                      icon="flag"
+                      onClick={() => {
+                        toggleAnnotations();
+                        setIsMorePopoverOpen(false);
+                      }}
+                      data-test-subj="dashboardSelectedPanelsToolbarToggleAnnotations"
+                    >
+                      {annotationsVisibility === 'visible'
+                        ? strings.getHideAnnotations()
+                        : strings.getShowAnnotations()}
+                    </EuiContextMenuItem>
+                  )}
+                  <EuiHorizontalRule margin="xs" />
+                  <EuiContextMenuItem
+                    icon={<EuiIcon type="trash" color="danger" aria-hidden />}
+                    onClick={() => {
+                      setIsMorePopoverOpen(false);
+                      remove();
+                    }}
+                    css={styles.danger}
+                    data-test-subj="dashboardSelectedPanelsToolbarRemove"
+                  >
+                    {strings.getDeletePanels()}
+                  </EuiContextMenuItem>
+                </EuiContextMenuPanel>
+              </EuiPopover>
             </EuiFlexItem>
           </EuiFlexGroup>
         </div>
@@ -509,36 +520,16 @@ const previewStyles = css`
   }
 `;
 
-const fadeInSharpen = keyframes({
-  from: { opacity: 0, filter: 'blur(2px)' },
-  to: { opacity: 1, filter: 'blur(0)' },
-});
-
 const popIn = keyframes({
   from: { opacity: 0, scale: '0.9' },
   to: { opacity: 1, scale: '1' },
 });
 
 const toolbarStyles = {
-  // row hover, on top of the shared expanded-section layout
-  more: ({ euiTheme }: UseEuiTheme) => ({
-    '.euiContextMenuItem': {
-      borderRadius: euiTheme.border.radius.small,
-      transition: `background-color 110ms ${EASE_OUT}`,
-    },
-    // pale row highlight, only on devices that really hover
-    '@media (hover: hover) and (pointer: fine)': {
-      '.euiContextMenuItem:hover': {
-        backgroundColor: euiTheme.colors.backgroundBaseInteractiveHover,
-        textDecoration: 'none',
-      },
-      '.euiContextMenuItem:hover .euiContextMenuItem__text': { textDecoration: 'none' },
-    },
+  morePopover: ({ euiTheme }: UseEuiTheme) => ({
+    minWidth: 240,
+    paddingBlock: euiTheme.size.xs,
   }),
-  labelSwap: {
-    animation: `${fadeInSharpen} 120ms ${EASE_OUT}`,
-    '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-  },
   lateButton: {
     animation: `${popIn} 150ms ${EASE_OUT}`,
     '@media (prefers-reduced-motion: reduce)': { animation: 'none' },

@@ -67,7 +67,7 @@ describe('SelectedPanelsToolbar', () => {
     expect(screen.getByTestId('dashboardSelectedPanelsToolbarGroup')).toBeDisabled();
   });
 
-  test('shows more options when expanded', () => {
+  test('shows more options in a popover', () => {
     renderToolbar(['1']);
     expect(screen.queryByTestId('dashboardSelectedPanelsToolbarRemove')).not.toBeInTheDocument();
     fireEvent.click(screen.getByTestId('dashboardSelectedPanelsToolbarToggleMore'));
@@ -106,11 +106,12 @@ describe('SelectedPanelsToolbar', () => {
     fireEvent.click(toggle);
     expect(updateAttributes).toHaveBeenCalledTimes(1);
     expect(attributes.state.visualization.layers[0].annotations[0].isHidden).toBe(true);
-    expect(toggle).toHaveTextContent('Show annotations');
 
-    fireEvent.click(toggle);
+    fireEvent.click(screen.getByTestId('dashboardSelectedPanelsToolbarToggleMore'));
+    const showAnnotations = screen.getByTestId('dashboardSelectedPanelsToolbarToggleAnnotations');
+    expect(showAnnotations).toHaveTextContent('Show annotations');
+    fireEvent.click(showAnnotations);
     expect(attributes.state.visualization.layers[0].annotations[0].isHidden).toBe(false);
-    expect(toggle).toHaveTextContent('Hide annotations');
   });
 
   test('hides "Add to chat" when AI chat is not available', () => {
@@ -260,7 +261,7 @@ describe('SelectedPanelsToolbar', () => {
       expect(screen.getByTestId('dashboardSelectedPanelsToolbarDuplicate')).toBeInTheDocument();
     });
 
-    test('Cancel goes back to the options without changing anything', () => {
+    test('Cancel returns to the compact toolbar without changing anything', () => {
       const { charts } = setupCharts(['1', '2']);
       fireEvent.click(screen.getByTestId('dashboardSelectedPanelsToolbarShareColors'));
       fireEvent.click(screen.getByLabelText(/Bytes/));
@@ -268,7 +269,8 @@ describe('SelectedPanelsToolbar', () => {
 
       expect(charts['1'].updateAttributes).not.toHaveBeenCalled();
       expect(charts['2'].updateAttributes).not.toHaveBeenCalled();
-      expect(screen.getByTestId('dashboardSelectedPanelsToolbarMore')).toBeInTheDocument();
+      expect(screen.queryByTestId('dashboardSelectedPanelsToolbarMore')).not.toBeInTheDocument();
+      expect(screen.getByTestId('dashboardSelectedPanelsToolbarToggleMore')).toBeInTheDocument();
     });
 
     test('Escape backs out of the picker without clearing the selection', () => {
