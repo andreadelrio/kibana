@@ -10,6 +10,8 @@
 import type { IconType } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import type { PublishesTitle } from '@kbn/presentation-publishing';
+import type { ColorMapping } from '@kbn/coloring';
+import { KbnPalette, type KbnPaletteId } from '@kbn/palettes';
 
 /** Minimal shape of the Lens attributes read here; everything is optional and best-effort */
 interface LensColumn {
@@ -30,7 +32,17 @@ interface LensAttributes {
     visualization?: {
       shape?: string;
       preferredSeriesType?: string;
-      layers?: Array<{ seriesType?: string; layerType?: string }>;
+      pointVisibility?: 'always' | 'never' | 'auto';
+      layers?: Array<{
+        layerId?: string;
+        seriesType?: string;
+        layerType?: string;
+        xAccessor?: string;
+        accessors?: string[];
+        splitAccessors?: string[];
+        palette?: { name?: KbnPaletteId };
+        colorMapping?: ColorMapping.Config;
+      }>;
     };
     datasourceStates?: Record<
       string,
@@ -42,6 +54,21 @@ interface LensAttributes {
 interface ChartKind {
   name: string;
   icon: IconType;
+}
+
+export interface MiniChartSeries {
+  id: string;
+  data: Array<{ x: string | number; value: number; stack?: string }>;
+}
+
+export interface PanelMiniChart {
+  chartType: 'line' | 'area' | 'bar';
+  colorMapping?: ColorMapping.Config;
+  paletteId: KbnPaletteId;
+  series: MiniChartSeries[];
+  isHorizontal: boolean;
+  isStacked: boolean;
+  showPoints: boolean;
 }
 
 const chartKind = (name: string, icon: IconType): ChartKind => ({ name, icon });
@@ -168,7 +195,7 @@ const getBreakdownLabel = (column: LensColumn) =>
 
 /**
  * Describes what a Lens panel shows, so panels can be told apart even without a title:
- * e.g. "Bar chart · Median of bytes by machine.os.keyword".
+ * e.g. "Median of bytes by machine.os.keyword".
  */
 export const describePanel = (api: unknown): { description: string; icon: IconType } => {
   const attributes =
@@ -195,8 +222,79 @@ export const describePanel = (api: unknown): { description: string; icon: IconTy
     : undefined;
 
   return {
-    description: details ? `${kind.name} · ${details}` : kind.name,
+    description: details ?? kind.name,
     icon: kind.icon,
+  };
+};
+
+export const getPanelMiniChart = (api: unknown): PanelMiniChart => {
+  const panel = api as {
+    getFullAttributes?: () => LensAttributes | undefined;
+    getInspectorAdapters?: () => {
+      tables?: {
+        tables?: Record<string, { rows: Array<Record<string, unknown>> }>;
+      };
+    };
+  };
+  const attributes = panel.getFullAttributes?.() ?? {};
+  const visualization = attributes.state?.visualization;
+  const layer =
+    visualization?.layers?.find(({ layerType }) => layerType === 'data') ??
+    visualization?.layers?.[0];
+  const seriesType =
+    layer?.seriesType ?? visualization?.preferredSeriesType ?? visualization?.shape ?? '';
+  const chartType: PanelMiniChart['chartType'] = seriesType.startsWith('line')
+    ? 'line'
+    : seriesType.startsWith('area')
+    ? 'area'
+    : 'bar';
+  const paletteId =
+    layer?.colorMapping?.paletteId ??
+    layer?.palette?.name ??
+    (chartType === 'line' ? KbnPalette.ElasticLineOptimized : KbnPalette.Default);
+
+  const tables = panel.getInspectorAdapters?.().tables?.tables;
+  const table =
+    (layer?.layerId ? tables?.[layer.layerId] : undefined) ?? Object.values(tables ?? {})[0];
+  const rows = table?.rows ?? [];
+  const metricAccessors = layer?.accessors ?? [];
+  const xAccessor = layer?.xAccessor;
+  const splitAccessor = layer?.splitAccessors?.[0];
+  const toX = (row: Record<string, unknown>, index: number): string | number => {
+    const value = xAccessor ? row[xAccessor] : undefined;
+    return typeof value === 'string' || typeof value === 'number' ? value : index;
+  };
+
+  let series: MiniChartSeries[] = [];
+  if (splitAccessor && metricAccessors[0]) {
+    const groups = new Map<string, MiniChartSeries['data']>();
+    rows.forEach((row, index) => {
+      const value = Number(row[metricAccessors[0]]);
+      if (!Number.isFinite(value)) return;
+      const id = String(row[splitAccessor] ?? '');
+      const data = groups.get(id) ?? [];
+      if (data.length < 16) data.push({ x: toX(row, index), value });
+      groups.set(id, data);
+    });
+    series = Array.from(groups, ([id, data]) => ({ id, data })).slice(0, 8);
+  } else {
+    series = metricAccessors.slice(0, 8).flatMap((accessor) => {
+      const data = rows.slice(0, 16).flatMap((row, index) => {
+        const value = Number(row[accessor]);
+        return Number.isFinite(value) ? [{ x: toX(row, index), value }] : [];
+      });
+      return data.length ? [{ id: accessor, data }] : [];
+    });
+  }
+
+  return {
+    chartType,
+    colorMapping: layer?.colorMapping,
+    paletteId,
+    series,
+    isHorizontal: seriesType.includes('horizontal'),
+    isStacked: seriesType.includes('stacked') || seriesType.includes('percentage'),
+    showPoints: visualization?.pointVisibility === 'always',
   };
 };
 

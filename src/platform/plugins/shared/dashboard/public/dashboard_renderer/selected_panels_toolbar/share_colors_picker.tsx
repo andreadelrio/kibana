@@ -7,23 +7,39 @@
  * License v3.0 only", or the "Server Side Public License, v 1".
  */
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   EuiButton,
   EuiButtonEmpty,
+  EuiCheckableCard,
   EuiFlexGroup,
   EuiFlexItem,
-  EuiIcon,
-  EuiRadioGroup,
-  EuiSpacer,
+  EuiFlyout,
+  EuiFlyoutBody,
+  EuiFlyoutFooter,
+  EuiFlyoutHeader,
   EuiText,
   EuiTitle,
   useGeneratedHtmlId,
-  type IconType,
   type UseEuiTheme,
+  useEuiTheme,
 } from '@elastic/eui';
+import {
+  AreaSeries,
+  BarSeries,
+  Chart,
+  LineSeries,
+  ScaleType,
+  Settings,
+  Tooltip,
+  TooltipType,
+  type PartialTheme,
+} from '@elastic/charts';
 import { i18n } from '@kbn/i18n';
 import { useMemoCss } from '@kbn/css-utils/public/use_memo_css';
+import { getColorsFromMapping } from '@kbn/coloring';
+import { useKbnPalettes } from '@kbn/palettes';
+import type { PanelMiniChart } from './describe_panel';
 
 const isFocusVisible = (target: EventTarget) => {
   try {
@@ -33,7 +49,7 @@ const isFocusVisible = (target: EventTarget) => {
   }
 };
 
-export interface ShareColorsPanelOption {
+export interface ShareColorsPanelPreviewOption {
   id: string;
   /** the panel title, or "Untitled" */
   label: string;
@@ -41,7 +57,9 @@ export interface ShareColorsPanelOption {
   isUntitled?: boolean;
   /** what the chart shows, below the label */
   description?: string;
-  icon: IconType;
+  /** a capture of the rendered panel; the generated mini chart is used until it is available */
+  thumbnailUrl?: string;
+  miniChart: PanelMiniChart;
 }
 
 const strings = {
@@ -65,10 +83,106 @@ const strings = {
     }),
 };
 
-/**
- * Takes over the selected panels toolbar to pick which panel's colors the other selected panels
- * should use.
- */
+const fallbackSeries: PanelMiniChart['series'] = [
+  {
+    id: 'primary',
+    data: [3, 6, 4, 8, 5, 9].map((value, x) => ({ x, value })),
+  },
+  {
+    id: 'secondary',
+    data: [6, 4, 7, 5, 8, 6].map((value, x) => ({ x, value })),
+  },
+];
+
+const miniChartTheme: PartialTheme = {
+  chartMargins: { left: 0, right: 0, top: 0, bottom: 0 },
+  chartPaddings: { left: 0, right: 0, top: 0, bottom: 0 },
+  background: { color: 'transparent' },
+  scales: { barsPadding: 0.2 },
+};
+
+const MiniChart = ({
+  chartType,
+  colorMapping,
+  paletteId,
+  series,
+  isHorizontal,
+  isStacked,
+  showPoints,
+}: PanelMiniChart) => {
+  const styles = useMemoCss(pickerStyles);
+  const palettes = useKbnPalettes();
+  const { colorMode, euiTheme } = useEuiTheme();
+  const previewSeries = series.length ? series : fallbackSeries;
+  const palette = palettes.get(paletteId);
+  const colors = colorMapping
+    ? getColorsFromMapping(palettes, colorMode === 'DARK', colorMapping)
+    : Array.from({ length: previewSeries.length }, (_, index) =>
+        palette.getColor(index % palette.colorCount)
+      );
+  const fallbackColors = [euiTheme.colors.vis.euiColorVis0, euiTheme.colors.vis.euiColorVis1];
+  const getSeriesColor = (index: number) =>
+    colors[index % colors.length] ?? fallbackColors[index % fallbackColors.length];
+
+  const commonSeriesProps = {
+    xScaleType: ScaleType.Ordinal,
+    yScaleType: ScaleType.Linear,
+    xAccessor: 'x',
+    yAccessors: ['value'] as string[],
+  } as const;
+
+  return (
+    <div css={styles.miniChart} aria-hidden>
+      <Chart>
+        <Settings theme={miniChartTheme} showLegend={false} rotation={isHorizontal ? 90 : 0} />
+        <Tooltip type={TooltipType.None} />
+        {chartType === 'line' ? (
+          <>
+            {previewSeries.map(({ id, data }, index) => (
+              <LineSeries
+                {...commonSeriesProps}
+                key={id}
+                id={id}
+                data={isStacked ? data.map((datum) => ({ ...datum, stack: 'all' })) : data}
+                color={getSeriesColor(index)}
+                stackAccessors={isStacked ? ['stack'] : undefined}
+                lineSeriesStyle={{ point: { visible: showPoints ? 'always' : 'never' } }}
+              />
+            ))}
+          </>
+        ) : chartType === 'area' ? (
+          <>
+            {previewSeries.map(({ id, data }, index) => (
+              <AreaSeries
+                {...commonSeriesProps}
+                key={id}
+                id={id}
+                data={isStacked ? data.map((datum) => ({ ...datum, stack: 'all' })) : data}
+                color={getSeriesColor(index)}
+                stackAccessors={isStacked ? ['stack'] : undefined}
+                areaSeriesStyle={{ point: { visible: showPoints ? 'always' : 'never' } }}
+              />
+            ))}
+          </>
+        ) : (
+          <>
+            {previewSeries.map(({ id, data }, index) => (
+              <BarSeries
+                {...commonSeriesProps}
+                key={id}
+                id={id}
+                data={isStacked ? data.map((datum) => ({ ...datum, stack: 'all' })) : data}
+                color={getSeriesColor(index)}
+                stackAccessors={isStacked ? ['stack'] : undefined}
+              />
+            ))}
+          </>
+        )}
+      </Chart>
+    </div>
+  );
+};
+
 export const ShareColorsPicker = ({
   panels,
   onApply,
@@ -76,7 +190,7 @@ export const ShareColorsPicker = ({
   onPreviewChange,
 }: {
   /** eligible source panels: selected Lens charts with color mapping */
-  panels: ShareColorsPanelOption[];
+  panels: ShareColorsPanelPreviewOption[];
   onApply: (sourcePanelId: string) => void;
   onCancel: () => void;
   /**
@@ -103,103 +217,130 @@ export const ShareColorsPicker = ({
   }, [hoveredId, focusedId, onPreviewChange]);
   useEffect(() => () => onPreviewChange?.(undefined, false), [onPreviewChange]);
 
-  // EuiRadio uses the option id as the input id
-  const getOptionId = useCallback(
-    (target: EventTarget | null) =>
-      (target as HTMLElement | null)
-        ?.closest('.euiRadioGroup__item')
-        ?.querySelector<HTMLInputElement>('input[type="radio"]')?.id,
-    []
-  );
-
   return (
-    <div
-      ref={containerRef}
-      css={styles.picker}
-      role="group"
+    <EuiFlyout
+      onClose={onCancel}
+      size={500}
+      ownFocus
       aria-labelledby={titleId}
       data-test-subj="dashboardShareColorsPicker"
     >
-      <EuiTitle size="xxs">
-        <h3 id={titleId}>{strings.getTitle()}</h3>
-      </EuiTitle>
-      <EuiText size="xs" color="subdued">
-        <p>{strings.getDescription(panels.length - 1)}</p>
-      </EuiText>
-      <EuiSpacer size="m" />
-      <EuiRadioGroup
-        name={`${titleId}-source`}
-        options={panels.map(({ id, label, isUntitled, description, icon }) => ({
-          id,
-          label: (
-            <span css={styles.option}>
-              <EuiIcon type={icon} color="subdued" css={styles.optionIcon} aria-hidden />
-              <span>
-                <span css={[styles.optionLabel, isUntitled && styles.untitled]}>{label}</span>
-                {description && (
-                  <EuiText size="xs" color="subdued" component="span" css={styles.optionLabel}>
-                    {description}
-                  </EuiText>
-                )}
-              </span>
-            </span>
-          ),
-          'data-test-subj': `dashboardShareColorsSource-${id}`,
-        }))}
-        idSelected={sourcePanelId}
-        onChange={(id) => setSourcePanelId(id)}
-        aria-labelledby={titleId}
-        onMouseOver={(e) => setHoveredId(getOptionId(e.target))}
-        onMouseLeave={() => setHoveredId(undefined)}
-        // only keyboard focus points at a panel: the automatic focus when the picker opens and
-        // focus from clicking an option must not leave a panel highlighted
-        onFocus={(e) => setFocusedId(isFocusVisible(e.target) ? getOptionId(e.target) : undefined)}
-        onKeyUp={(e) => {
-          if (isFocusVisible(e.target)) setFocusedId(getOptionId(e.target));
-        }}
-        onBlur={() => setFocusedId(undefined)}
-        css={styles.options}
-        data-test-subj="dashboardShareColorsSources"
-      />
-      <EuiSpacer size="m" />
-      <EuiFlexGroup gutterSize="s" justifyContent="flexEnd" responsive={false}>
-        <EuiFlexItem grow={false}>
-          <EuiButtonEmpty size="s" onClick={onCancel} data-test-subj="dashboardShareColorsCancel">
-            {strings.getCancel()}
-          </EuiButtonEmpty>
-        </EuiFlexItem>
-        <EuiFlexItem grow={false}>
-          <EuiButton
-            size="s"
-            fill
-            isDisabled={!sourcePanelId}
-            onClick={() => sourcePanelId && onApply(sourcePanelId)}
-            data-test-subj="dashboardShareColorsApply"
-          >
-            {strings.getApply()}
-          </EuiButton>
-        </EuiFlexItem>
-      </EuiFlexGroup>
-    </div>
+      <EuiFlyoutHeader hasBorder>
+        <EuiTitle size="s">
+          <h2 id={titleId}>{strings.getTitle()}</h2>
+        </EuiTitle>
+        <EuiText size="s" color="subdued">
+          <p>{strings.getDescription(panels.length - 1)}</p>
+        </EuiText>
+      </EuiFlyoutHeader>
+      <EuiFlyoutBody>
+        <div
+          ref={containerRef}
+          role="radiogroup"
+          aria-labelledby={titleId}
+          onMouseLeave={() => setHoveredId(undefined)}
+          data-test-subj="dashboardShareColorsSources"
+        >
+          {panels.map(({ id, label, isUntitled, description, thumbnailUrl, miniChart }) => (
+            <div
+              key={id}
+              css={styles.option}
+              onMouseEnter={() => setHoveredId(id)}
+              onMouseLeave={() => setHoveredId(undefined)}
+              onFocus={(event) => setFocusedId(isFocusVisible(event.target) ? id : undefined)}
+              onKeyUp={(event) => {
+                if (isFocusVisible(event.target)) setFocusedId(id);
+              }}
+              onBlur={() => setFocusedId(undefined)}
+            >
+              <EuiCheckableCard
+                id={id}
+                name={`${titleId}-source`}
+                checkableType="radio"
+                checked={sourcePanelId === id}
+                onChange={() => setSourcePanelId(id)}
+                label={
+                  <div css={styles.optionContent}>
+                    <span css={styles.optionText}>
+                      <EuiTitle size="xxs">
+                        <h3 css={[styles.optionLabel, isUntitled && styles.untitled]}>{label}</h3>
+                      </EuiTitle>
+                      {description && (
+                        <EuiText
+                          size="xs"
+                          color="subdued"
+                          component="span"
+                          css={styles.optionLabel}
+                        >
+                          {description}
+                        </EuiText>
+                      )}
+                    </span>
+                    {thumbnailUrl ? (
+                      <img src={thumbnailUrl} alt="" css={[styles.miniChart, styles.thumbnail]} />
+                    ) : (
+                      <MiniChart {...miniChart} />
+                    )}
+                  </div>
+                }
+                data-test-subj={`dashboardShareColorsSource-${id}`}
+              />
+            </div>
+          ))}
+        </div>
+      </EuiFlyoutBody>
+      <EuiFlyoutFooter>
+        <EuiFlexGroup gutterSize="s" justifyContent="flexEnd" responsive={false}>
+          <EuiFlexItem grow={false}>
+            <EuiButtonEmpty size="s" onClick={onCancel} data-test-subj="dashboardShareColorsCancel">
+              {strings.getCancel()}
+            </EuiButtonEmpty>
+          </EuiFlexItem>
+          <EuiFlexItem grow={false}>
+            <EuiButton
+              size="s"
+              fill
+              isDisabled={!sourcePanelId}
+              onClick={() => sourcePanelId && onApply(sourcePanelId)}
+              data-test-subj="dashboardShareColorsApply"
+            >
+              {strings.getApply()}
+            </EuiButton>
+          </EuiFlexItem>
+        </EuiFlexGroup>
+      </EuiFlyoutFooter>
+    </EuiFlyout>
   );
 };
 
 const pickerStyles = {
-  picker: ({ euiTheme }: UseEuiTheme) => ({
-    padding: `${euiTheme.size.xs} ${euiTheme.size.xs} 0`,
-  }),
-  options: ({ euiTheme }: UseEuiTheme) => ({
-    '.euiRadioGroup__item': { marginBlockEnd: euiTheme.size.s },
-  }),
   option: ({ euiTheme }: UseEuiTheme) => ({
+    marginBlockEnd: euiTheme.size.m,
+  }),
+  optionContent: ({ euiTheme }: UseEuiTheme) => ({
     display: 'flex',
-    alignItems: 'flex-start',
+    flexDirection: 'column' as const,
+    alignItems: 'stretch' as const,
     gap: euiTheme.size.s,
+    width: '100%',
   }),
-  optionIcon: ({ euiTheme }: UseEuiTheme) => ({
-    flexShrink: 0,
-    marginBlockStart: euiTheme.size.xxs,
+  optionText: ({ euiTheme }: UseEuiTheme) => ({
+    display: 'flex',
+    flexDirection: 'column' as const,
+    gap: euiTheme.size.xs,
+    minWidth: 0,
   }),
+  miniChart: ({ euiTheme }: UseEuiTheme) => ({
+    width: '100%',
+    height: 120,
+    overflow: 'hidden',
+    borderRadius: euiTheme.border.radius.small,
+    backgroundColor: euiTheme.colors.backgroundBaseSubdued,
+  }),
+  thumbnail: {
+    display: 'block',
+    objectFit: 'contain' as const,
+  },
   untitled: ({ euiTheme }: UseEuiTheme) => ({
     color: euiTheme.colors.textSubdued,
   }),

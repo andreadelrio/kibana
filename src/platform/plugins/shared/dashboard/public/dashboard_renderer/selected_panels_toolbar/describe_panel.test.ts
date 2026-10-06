@@ -37,7 +37,7 @@ describe('describePanel', () => {
       },
     });
     expect(describePanel(panel)).toEqual({
-      description: 'Bar chart · Median of bytes by machine.os.keyword',
+      description: 'Median of bytes by machine.os.keyword',
       icon: 'chartBarVertical',
     });
   });
@@ -54,7 +54,7 @@ describe('describePanel', () => {
       },
     });
     expect(describePanel(panel)).toEqual({
-      description: 'Donut chart · Count of records by OS',
+      description: 'Count of records by OS',
       icon: 'chartPie',
     });
   });
@@ -70,7 +70,7 @@ describe('describePanel', () => {
         }),
       },
     });
-    expect(describePanel(panel).description).toBe('Line chart · Count of records');
+    expect(describePanel(panel).description).toBe('Count of records');
   });
 
   test('reads ES|QL columns', () => {
@@ -85,7 +85,7 @@ describe('describePanel', () => {
         },
       },
     });
-    expect(describePanel(panel).description).toBe('Area chart · avg_bytes');
+    expect(describePanel(panel).description).toBe('avg_bytes');
   });
 
   test('falls back to a generic name', () => {

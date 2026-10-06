@@ -167,7 +167,7 @@ describe('SelectedPanelsToolbar', () => {
       expect(screen.getByTestId('dashboardSelectedPanelsToolbarShareColors')).toBeDisabled();
     });
 
-    test('takes over the toolbar and lists only eligible panels', () => {
+    test('opens a flyout and lists only eligible panels', () => {
       setupCharts(['1', '2', '3']);
       fireEvent.click(screen.getByTestId('dashboardSelectedPanelsToolbarShareColors'));
 
@@ -176,10 +176,7 @@ describe('SelectedPanelsToolbar', () => {
       expect(screen.getByLabelText(/Requests/)).toBeInTheDocument();
       expect(screen.getByLabelText(/Bytes/)).toBeInTheDocument();
       expect(screen.queryByLabelText(/Notes/)).not.toBeInTheDocument();
-      // the rest of the toolbar is replaced while picking
-      expect(
-        screen.queryByTestId('dashboardSelectedPanelsToolbarDuplicate')
-      ).not.toBeInTheDocument();
+      expect(screen.getByTestId('dashboardSelectedPanelsToolbarDuplicate')).toBeInTheDocument();
       expect(screen.getByTestId('dashboardShareColorsApply')).toBeDisabled();
     });
 
@@ -245,7 +242,7 @@ describe('SelectedPanelsToolbar', () => {
       }
     });
 
-    test('Apply copies the source colors to the other panels and returns to the toolbar', () => {
+    test('Apply copies the source colors to the other panels and returns to the toolbar', async () => {
       const { charts } = setupCharts(['1', '2', '3']);
       fireEvent.click(screen.getByTestId('dashboardSelectedPanelsToolbarShareColors'));
       fireEvent.click(screen.getByLabelText(/Requests/));
@@ -257,11 +254,13 @@ describe('SelectedPanelsToolbar', () => {
         expect.objectContaining({ title: 'Applied colors from "Requests" to 1 panel' })
       );
       expect(screen.queryByTestId('dashboardShareColorsPicker')).not.toBeInTheDocument();
-      expect(screen.queryByTestId('dashboardSelectedPanelsToolbarMore')).not.toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.queryByTestId('dashboardSelectedPanelsToolbarMore')).not.toBeInTheDocument()
+      );
       expect(screen.getByTestId('dashboardSelectedPanelsToolbarDuplicate')).toBeInTheDocument();
     });
 
-    test('Cancel returns to the compact toolbar without changing anything', () => {
+    test('Cancel returns to the compact toolbar without changing anything', async () => {
       const { charts } = setupCharts(['1', '2']);
       fireEvent.click(screen.getByTestId('dashboardSelectedPanelsToolbarShareColors'));
       fireEvent.click(screen.getByLabelText(/Bytes/));
@@ -269,7 +268,9 @@ describe('SelectedPanelsToolbar', () => {
 
       expect(charts['1'].updateAttributes).not.toHaveBeenCalled();
       expect(charts['2'].updateAttributes).not.toHaveBeenCalled();
-      expect(screen.queryByTestId('dashboardSelectedPanelsToolbarMore')).not.toBeInTheDocument();
+      await waitFor(() =>
+        expect(screen.queryByTestId('dashboardSelectedPanelsToolbarMore')).not.toBeInTheDocument()
+      );
       expect(screen.getByTestId('dashboardSelectedPanelsToolbarToggleMore')).toBeInTheDocument();
     });
 

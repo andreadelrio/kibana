@@ -39,10 +39,10 @@ import {
   hasColorMapping,
 } from '../../dashboard_actions/share_color_mapping_action';
 import { coreServices } from '../../services/kibana_services';
-import { ShareColorsPicker, type ShareColorsPanelOption } from './share_colors_picker';
-import { describePanel, getPanelTitle } from './describe_panel';
+import { ShareColorsPicker, type ShareColorsPanelPreviewOption } from './share_colors_picker';
+import { capturePanelThumbnail } from './capture_panel_thumbnail';
+import { describePanel, getPanelMiniChart, getPanelTitle } from './describe_panel';
 import { useAddPanelsToChatAction } from './use_add_panels_to_chat_action';
-import { useToolbarExpandAnimation } from './use_toolbar_expand_animation';
 import {
   EASE_OUT,
   FloatingToolbar,
@@ -139,7 +139,7 @@ export const SelectedPanelsToolbar = ({
   const { euiTheme } = useEuiTheme();
   const styles = useMemoCss(toolbarStyles);
   const shared = useMemoCss(floatingToolbarStyles);
-  const { animateContentSwap, frameRef } = useToolbarExpandAnimation();
+  const frameRef = useRef<HTMLDivElement | null>(null);
   const [isMorePopoverOpen, setIsMorePopoverOpen] = useState(false);
   const [isLayoutPopoverOpen, setIsLayoutPopoverOpen] = useState(false);
 
@@ -182,20 +182,20 @@ export const SelectedPanelsToolbar = ({
     [dashboardApi]
   );
 
-  // Share color mapping: the picker takes over the toolbar to choose the source panel
-  const colorPanels: ShareColorsPanelOption[] = useMemo(() => {
+  // Share color mapping: the flyout previews each eligible source panel.
+  const colorPanels: ShareColorsPanelPreviewOption[] = useMemo(() => {
     const options = Array.from(selectedPanelIds)
       .filter((id) => hasColorMapping(children[id]))
       .map((id) => {
         const title = getPanelTitle(children[id]);
-        const { description, icon } = describePanel(children[id]);
+        const { description } = describePanel(children[id]);
         // every option has the same shape: a name (or "Untitled") with what it shows below
         return {
           id,
           label: title ?? strings.getUntitled(),
           isUntitled: !title,
           description,
-          icon,
+          miniChart: getPanelMiniChart(children[id]),
         };
       });
     // number options that would read exactly the same, so each can still be told apart
@@ -208,6 +208,64 @@ export const SelectedPanelsToolbar = ({
         : option;
     });
   }, [children, selectedPanelIds]);
+
+  const [isPickingColorSource, setIsPickingColorSource] = useState(false);
+  const [panelThumbnails, setPanelThumbnails] = useState<Record<string, string>>({});
+  const thumbnailUrls = useRef<string[]>([]);
+  const colorPanelPreviews = useMemo(
+    () =>
+      colorPanels.map((panel) => ({
+        ...panel,
+        thumbnailUrl: panelThumbnails[panel.id],
+      })),
+    [colorPanels, panelThumbnails]
+  );
+
+  useEffect(() => {
+    if (!isPickingColorSource) {
+      thumbnailUrls.current.forEach((url) => URL.revokeObjectURL?.(url));
+      thumbnailUrls.current = [];
+      setPanelThumbnails({});
+      return;
+    }
+
+    let cancelled = false;
+    void Promise.all(
+      colorPanels.map(async ({ id }) => {
+        try {
+          return [
+            id,
+            await capturePanelThumbnail(id, euiTheme.colors.backgroundBasePlain),
+          ] as const;
+        } catch {
+          return [id, undefined] as const;
+        }
+      })
+    ).then((captures) => {
+      const nextThumbnails = Object.fromEntries(
+        captures.filter((capture): capture is readonly [string, string] => Boolean(capture[1]))
+      );
+      const nextUrls = Object.values(nextThumbnails);
+      if (cancelled) {
+        nextUrls.forEach((url) => URL.revokeObjectURL?.(url));
+        return;
+      }
+      thumbnailUrls.current.forEach((url) => URL.revokeObjectURL?.(url));
+      thumbnailUrls.current = nextUrls;
+      setPanelThumbnails(nextThumbnails);
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [colorPanels, euiTheme.colors.backgroundBasePlain, isPickingColorSource]);
+
+  useEffect(
+    () => () => {
+      thumbnailUrls.current.forEach((url) => URL.revokeObjectURL?.(url));
+    },
+    []
+  );
 
   // Point at the panel an option refers to: the other selected panels fade back while it's
   // hovered or focused. Applied through data attributes on the grid items, see `previewStyles`.
@@ -229,27 +287,13 @@ export const SelectedPanelsToolbar = ({
     [colorPanels]
   );
   const canShareColors = colorPanels.length >= 2;
-  const [isPickingColorSource, setIsPickingColorSource] = useState(false);
-  // keep the toolbar's width while the picker is shown, so it doesn't jump sideways
-  const [pickerWidth, setPickerWidth] = useState<number | undefined>();
 
   const openColorSourcePicker = useCallback(() => {
-    const width = frameRef.current?.getBoundingClientRect().width;
     setIsMorePopoverOpen(false);
-    animateContentSwap(() => {
-      setPickerWidth(width);
-      setIsPickingColorSource(true);
-    });
-  }, [animateContentSwap, frameRef]);
+    setIsPickingColorSource(true);
+  }, []);
 
-  const closeColorSourcePicker = useCallback(
-    () =>
-      animateContentSwap(() => {
-        setIsPickingColorSource(false);
-        setPickerWidth(undefined);
-      }),
-    [animateContentSwap]
-  );
+  const closeColorSourcePicker = useCallback(() => setIsPickingColorSource(false), []);
 
   const applyColorsFrom = useCallback(
     (sourcePanelId: string) => {
@@ -309,25 +353,26 @@ export const SelectedPanelsToolbar = ({
   const layoutLabel = dashboardPanelContextMenuStrings.getLayoutLabel();
 
   return (
-    <FloatingToolbar
-      frameRef={frameRef}
-      isReady={isReady}
-      skipEntrance={skipEntrance}
-      role="toolbar"
-      aria-label={strings.getToolbarLabel()}
-      data-test-subj="dashboardSelectedPanelsToolbar"
-    >
-      {isPickingColorSource ? (
-        <div css={shared.content} style={{ width: pickerWidth }}>
+    <>
+      {isPickingColorSource && (
+        <>
           <Global styles={previewStyles} />
           <ShareColorsPicker
-            panels={colorPanels}
+            panels={colorPanelPreviews}
             onApply={applyColorsFrom}
             onCancel={closeColorSourcePicker}
             onPreviewChange={setColorSourcePreview}
           />
-        </div>
-      ) : (
+        </>
+      )}
+      <FloatingToolbar
+        frameRef={frameRef}
+        isReady={isReady}
+        skipEntrance={skipEntrance}
+        role="toolbar"
+        aria-label={strings.getToolbarLabel()}
+        data-test-subj="dashboardSelectedPanelsToolbar"
+      >
         <div css={shared.content}>
           <EuiFlexGroup gutterSize="xs" alignItems="center" responsive={false}>
             <EuiFlexItem grow={false}>
@@ -496,8 +541,8 @@ export const SelectedPanelsToolbar = ({
             </EuiFlexItem>
           </EuiFlexGroup>
         </div>
-      )}
-    </FloatingToolbar>
+      </FloatingToolbar>
+    </>
   );
 };
 
