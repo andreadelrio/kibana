@@ -129,6 +129,14 @@ export const PresentationPanelTitle = ({
         pointer-events: none; // prevent drag event from triggering onClick
       }
     `;
+    const editableTitleStyles = css`
+      text-decoration: none;
+
+      &:hover,
+      &:focus {
+        text-decoration: none;
+      }
+    `;
 
     // Smart Title: prefix (plain) + only the field name as a primary blue link (popover or customize)
     if (smartTitleActive && breakdownFieldName) {
@@ -244,7 +252,7 @@ export const PresentationPanelTitle = ({
         color="text"
         onClick={onClickCustomize}
         onKeyDown={onKeyDown}
-        css={titleStyles}
+        css={[titleStyles, editableTitleStyles]}
         aria-label={i18n.translate('embeddableApi.header.titleAriaLabel', {
           defaultMessage: 'Click to edit title: {title}',
           values: { title: panelTitle },

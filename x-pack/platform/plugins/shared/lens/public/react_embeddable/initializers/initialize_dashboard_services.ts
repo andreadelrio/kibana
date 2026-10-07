@@ -75,8 +75,15 @@ export interface DashboardServicesConfig {
     };
   anyStateChange$: Observable<void>;
   getLatestState: () => SerializedProps;
-  reinitializeState: (lastSaved?: LensWireAPIConfig) => void;
+  reinitializeState: (runtimeState: LensRuntimeState) => void;
 }
+
+const getDefaultDescription = ({
+  ref_id,
+  attributes,
+  description,
+}: LensRuntimeState): string | undefined =>
+  ref_id ? attributes.description || description : description;
 
 /**
  * Everything about panel and library services
@@ -94,9 +101,7 @@ export function initializeDashboardServices(
   // ( based on existing FTR tests ).
   const defaultTitle$ = new BehaviorSubject<string | undefined>(initialState.attributes.title);
   const defaultDescription$ = new BehaviorSubject<string | undefined>(
-    initialState.ref_id
-      ? internalApi.attributes$.getValue().description || initialState.description
-      : initialState.description
+    getDefaultDescription(initialState)
   );
 
   const breakdownFieldName$ = new BehaviorSubject<string | undefined>(
@@ -186,8 +191,10 @@ export function initializeDashboardServices(
         disableTriggers: internalApi.disableTriggers$.getValue(),
       };
     },
-    reinitializeState: (lastSaved?: LensWireAPIConfig) => {
-      titleManager.reinitializeState(lastSaved);
+    reinitializeState: (runtimeState: LensRuntimeState) => {
+      defaultTitle$.next(runtimeState.attributes.title);
+      defaultDescription$.next(getDefaultDescription(runtimeState));
+      titleManager.reinitializeState(runtimeState);
     },
   };
 }
