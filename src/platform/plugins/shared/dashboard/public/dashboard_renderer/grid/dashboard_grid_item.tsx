@@ -22,6 +22,7 @@ import { printViewportVisStyles } from '../print_styles';
 import { DASHBOARD_MARGIN_SIZE } from './constants';
 import { getHighlightStyles } from './highlight_styles';
 import { PanelContextMenuContext, SelectionPreviewContext } from './panel_context_menu';
+import { SelectedPanelActions } from './selected_panel_actions';
 
 type DivProps = Pick<React.HTMLAttributes<HTMLDivElement>, 'className' | 'style' | 'children'>;
 
@@ -94,13 +95,15 @@ export const DashboardGridItem = React.forwardRef<HTMLDivElement, Props>(
     const showBorder = useMargins && !hidePanelBorders; // we do not show panel borders when margins are disabled
     const previewSelectedPanelIds = useContext(SelectionPreviewContext);
     const isSelected = selectedPanelIds.has(id) || (previewSelectedPanelIds?.has(id) ?? false);
+    const showSelectedPanelActions = viewMode === 'edit' && selectedPanelIds.has(id);
     const classes = classNames('dshDashboardGrid__item', {
       'dshDashboardGrid__item--expanded': expandPanel,
       'dshDashboardGrid__item--hidden': hidePanel,
       'dshDashboardGrid__item--focused': focusPanel,
       'dshDashboardGrid__item--blurred': blurPanel,
       'dshDashboardGrid__item--selected': isSelected || isIndicatingRelatedPanels,
-      'dshDashboardGrid__item--hideHoverActions': blurPanel || focusedForEdit,
+      'dshDashboardGrid__item--hideHoverActions':
+        blurPanel || focusedForEdit || showSelectedPanelActions,
       // eslint-disable-next-line @typescript-eslint/naming-convention
       printViewport__vis: viewMode === 'print',
     });
@@ -234,6 +237,9 @@ export const DashboardGridItem = React.forwardRef<HTMLDivElement, Props>(
         {isRenderable ? (
           <>
             {renderedEmbeddable}
+            {showSelectedPanelActions && (
+              <SelectedPanelActions panelId={id} selectedPanelIds={selectedPanelIds} />
+            )}
             {children}
           </>
         ) : (
@@ -264,6 +270,7 @@ const dashboardGridItemStyles = {
         },
         // Call out panels that are selected to indicate their related panels with the same border plus a semitransparent overlay
         '&.dshDashboardGrid__item--selected': {
+          position: 'relative',
           // Ensure the overall panel still has a plain background so we can apply the semitransparent overlay on top of it
           backgroundColor: context.euiTheme.colors.backgroundBasePlain,
           '& .embPanel': {
