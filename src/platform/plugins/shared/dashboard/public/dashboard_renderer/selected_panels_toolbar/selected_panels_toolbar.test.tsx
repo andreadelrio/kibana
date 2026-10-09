@@ -81,6 +81,7 @@ describe('SelectedPanelsToolbar', () => {
     expect(
       screen.queryByTestId('dashboardSelectedPanelsToolbarToggleAnnotations')
     ).not.toBeInTheDocument();
+    expect(screen.queryByRole('separator')).not.toBeInTheDocument();
   });
 
   test('toggles annotations of the selected panels', () => {
@@ -104,6 +105,7 @@ describe('SelectedPanelsToolbar', () => {
     fireEvent.click(screen.getByTestId('dashboardSelectedPanelsToolbarToggleMore'));
     const toggle = screen.getByTestId('dashboardSelectedPanelsToolbarToggleAnnotations');
     expect(toggle).toHaveTextContent('Hide annotations');
+    expect(screen.getByRole('separator')).toBeInTheDocument();
 
     fireEvent.click(toggle);
     expect(updateAttributes).toHaveBeenCalledTimes(1);

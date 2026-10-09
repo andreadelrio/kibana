@@ -331,7 +331,7 @@ export const SelectedPanelsToolbar = ({
                         : strings.getShowAnnotations()}
                     </EuiContextMenuItem>
                   )}
-                  <EuiHorizontalRule margin="xs" />
+                  {annotationsVisibility !== 'none' && <EuiHorizontalRule margin="xs" />}
                   <EuiContextMenuItem
                     icon={<EuiIcon type="trash" color="danger" aria-hidden />}
                     onClick={() => {
