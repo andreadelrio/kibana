@@ -14,6 +14,7 @@ import { UserMessages } from '../user_messages/container';
 import { useMessages } from './hooks';
 import { getViewMode } from '../helper';
 import { addLog } from '../logger';
+import { NewPanelEmptyState } from './new_panel_empty_state';
 
 export function LensEmbeddableComponent({
   internalApi,
@@ -32,11 +33,13 @@ export function LensEmbeddableComponent({
     blockingErrors,
     hideTitle,
     panelTitle,
+    isNewlyCreated,
   ] = useBatchedPublishingSubjects(
     internalApi.expressionParams$,
     internalApi.validationMessages$,
     api.hideTitle$,
     api.title$,
+    internalApi.isNewlyCreated$,
     // listen to view change mode but do not use its actual value
     // just call the Lens API to know whether it's in edit mode
     api.viewMode$
@@ -50,6 +53,15 @@ export function LensEmbeddableComponent({
     addLog(`Mounting Lens Embeddable component: ${api.defaultTitle$?.getValue()}`);
     return onUnmount;
   }, [api, onUnmount]);
+
+  // A brand-new panel that can't render yet shows starter suggestions instead of validation errors
+  if (
+    isNewlyCreated &&
+    canEdit &&
+    (expressionParams?.expression == null || blockingErrors.length)
+  ) {
+    return <NewPanelEmptyState />;
+  }
 
   return (
     <div css={{ width: '100%', height: '100%', position: 'relative' }}>

@@ -211,6 +211,12 @@ export function LayerPanel(props: LayerPanelProps) {
         );
 
   const isEmptyLayer = !dimensionGroups.some((d) => d.accessors.length > 0);
+  // Inline editing flags missing fields on an emptied layer, but a layer that has never had
+  // fields (e.g. a brand-new panel) shouldn't open looking like the user already made a mistake
+  const hasHadDimensions = useRef(!isEmptyLayer);
+  if (!isEmptyLayer) {
+    hasHadDimensions.current = true;
+  }
   const { openColumnId, openColumnGroup, isComplete } = openDimension;
 
   useEffect(() => {
@@ -632,7 +638,7 @@ export function LayerPanel(props: LayerPanelProps) {
             .map((group, groupIndex) => {
               let errorText: string = '';
 
-              if (!isEmptyLayer || isInlineEditing) {
+              if (!isEmptyLayer || (isInlineEditing && hasHadDimensions.current)) {
                 if (
                   group.requiredMinDimensionCount &&
                   group.requiredMinDimensionCount > group.accessors.length

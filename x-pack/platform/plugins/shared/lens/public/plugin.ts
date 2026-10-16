@@ -726,7 +726,7 @@ export class LensPlugin {
     );
     startDependencies.uiActions.registerActionAsync('addLensPanelAction', async () => {
       const { getAddLensPanelAction } = await import('./async_services');
-      return getAddLensPanelAction(startDependencies);
+      return getAddLensPanelAction(core, startDependencies);
     });
     startDependencies.uiActions.attachAction(FEATURED_ADD_PANEL_TRIGGER, 'addLensPanelAction');
 

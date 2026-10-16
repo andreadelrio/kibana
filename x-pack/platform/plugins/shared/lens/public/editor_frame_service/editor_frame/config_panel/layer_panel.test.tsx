@@ -278,7 +278,7 @@ describe('LayerPanel', () => {
       expect(screen.queryByText('Requires field')).not.toBeInTheDocument();
     });
 
-    it('should render the required warning when the chart is empty but isInlineEditing', async () => {
+    it('should not render the required warning when inline editing a chart that has never had fields', async () => {
       mockVisualization.getConfiguration.mockReturnValue({
         groups: [
           {
@@ -295,7 +295,31 @@ describe('LayerPanel', () => {
           setIsInlineFlyoutVisible: jest.fn(),
         },
       });
-      expect(screen.queryByText('Requires field')).toBeInTheDocument();
+      expect(screen.queryByText('Requires field')).not.toBeInTheDocument();
+    });
+
+    it('should render the required warning when inline editing a chart whose fields were removed', async () => {
+      const requiredGroup = {
+        ...defaultGroup,
+        groupLabel: 'B',
+        groupId: 'b',
+        requiredMinDimensionCount: 1,
+      };
+      mockVisualization.getConfiguration.mockReturnValue({
+        groups: [{ ...requiredGroup, accessors: [{ columnId: 'x' }] }],
+      });
+      const setIsInlineFlyoutVisible = jest.fn();
+      const { rerender } = renderLayerPanel({ propsOverrides: { setIsInlineFlyoutVisible } });
+      expect(screen.queryByText('Requires field')).not.toBeInTheDocument();
+
+      rerender(
+        <LayerPanel
+          {...(props as LayerPanelProps)}
+          dimensionGroups={[requiredGroup]}
+          setIsInlineFlyoutVisible={setIsInlineFlyoutVisible}
+        />
+      );
+      expect(screen.getByText('Requires field')).toBeInTheDocument();
     });
 
     it('should tell the user to remove the correct number of dimensions', async () => {

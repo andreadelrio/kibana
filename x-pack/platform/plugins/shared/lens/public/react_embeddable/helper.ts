@@ -124,7 +124,8 @@ export async function deserializeState(
     newState.attributes = dropLegacyAggregateQuerySlot(newState.attributes);
   }
 
-  if (newState.isNewPanel) {
+  // New form-based panels arrive with a starter visualization; only ES|QL ones need building here
+  if (newState.isNewPanel && newState.attributes?.visualizationType == null) {
     try {
       const newAttributes = await loadESQLAttributes(services);
       // provide a fallback
