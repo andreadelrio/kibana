@@ -17,51 +17,19 @@ import { LENS_EMBEDDABLE_TYPE } from '@kbn/lens-common';
 import type { LensPluginStartDependencies } from '../plugin';
 import { lensVisTypeAlias } from '../vis_type_alias';
 import { generateId } from '../id_generator';
-import { createEmptyLensState } from '../react_embeddable/helper';
 import { mountInlinePanel } from '../react_embeddable/mount';
+import { getNewPanelStarterAttributes } from '../react_embeddable/renderer/prototype_chart_attributes';
+import { newPanelEmptyStateVariant$ } from '../react_embeddable/renderer/new_panel_empty_state_variant';
 
 /**
- * PROTOTYPE: builds an empty form-based stacked bar chart on the default data view,
- * so the inline editing flyout opens with the axis/breakdown dimensions ready to fill.
+ * PROTOTYPE: the "Default time series" direction starts the panel as a real count-over-time chart
+ * on the default data view. The other directions start empty and show an empty state instead.
  */
-async function getEmptyFormBasedAttributes(
+async function getStarterAttributes(
   deps: LensPluginStartDependencies
 ): Promise<LensSerializedState['attributes'] | undefined> {
-  const dataViewId = await deps.dataViews.getDefaultId();
-  if (!dataViewId) {
-    return;
-  }
-  const layerId = generateId();
-  const { attributes } = createEmptyLensState('lnsXY');
-  return {
-    ...attributes,
-    references: [
-      {
-        type: 'index-pattern',
-        id: dataViewId,
-        name: `indexpattern-datasource-layer-${layerId}`,
-      },
-    ],
-    state: {
-      ...attributes.state,
-      datasourceStates: {
-        formBased: { layers: { [layerId]: { columns: {}, columnOrder: [] } } },
-      },
-      visualization: {
-        legend: { isVisible: true, position: 'right' },
-        valueLabels: 'hide',
-        preferredSeriesType: 'bar_stacked',
-        layers: [
-          {
-            layerId,
-            accessors: [],
-            seriesType: 'bar_stacked',
-            layerType: 'data',
-          },
-        ],
-      },
-    },
-  } as LensSerializedState['attributes'];
+  const dataView = await deps.dataViews.getDefaultDataView();
+  return getNewPanelStarterAttributes(dataView, newPanelEmptyStateVariant$.getValue());
 }
 
 export function getAddLensPanelAction(core: CoreStart, deps: LensPluginStartDependencies) {
@@ -89,7 +57,7 @@ export function getAddLensPanelAction(core: CoreStart, deps: LensPluginStartDepe
         apiIsPresentationContainer(embeddable) &&
         apiHasAppContext(embeddable) &&
         embeddable.getAppContext().currentAppId === 'dashboards';
-      const attributes = isDashboard ? await getEmptyFormBasedAttributes(deps) : undefined;
+      const attributes = isDashboard ? await getStarterAttributes(deps) : undefined;
 
       // Outside dashboards, or without a data view to start from, keep the full-page editor
       if (!isDashboard || !attributes) {

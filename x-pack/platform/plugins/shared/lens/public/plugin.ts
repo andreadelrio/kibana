@@ -5,6 +5,7 @@
  * 2.0.
  */
 
+import React from 'react';
 import type { AppMountParameters, CoreSetup, CoreStart, DocLinksStart } from '@kbn/core/public';
 import type { FieldFormatsSetup, FieldFormatsStart } from '@kbn/field-formats-plugin/public';
 import type {
@@ -63,6 +64,7 @@ import type { LicensingPluginStart } from '@kbn/licensing-plugin/server';
 import type { NavigationPublicPluginStart } from '@kbn/navigation-plugin/public';
 import type { SavedObjectTaggingPluginStart } from '@kbn/saved-objects-tagging-plugin/public';
 import type { ServerlessPluginStart } from '@kbn/serverless/public';
+import type { DeveloperToolbarStart } from '@kbn/developer-toolbar-plugin/public';
 import type { SpacesPluginStart } from '@kbn/spaces-plugin/public';
 import type { UnifiedSearchPublicPluginStart } from '@kbn/unified-search-plugin/public';
 import type { KqlPluginStart } from '@kbn/kql/public';
@@ -181,6 +183,7 @@ export interface LensPluginStartDependencies {
   eventAnnotationService: EventAnnotationServiceType;
   contentManagement: ContentManagementPublicStart;
   serverless?: ServerlessPluginStart;
+  developerToolbar?: DeveloperToolbarStart;
   licensing?: LicensingPluginStart;
   fieldsMetadata?: FieldsMetadataPublicStart;
   cps?: CPSPluginStart;
@@ -286,6 +289,12 @@ export type LensSuggestionsApi = (
   preferredChartType?: ChartType,
   preferredVisAttributes?: TypedLensByValueInput['attributes']
 ) => Suggestion[] | undefined;
+
+const LazyNewPanelEmptyStateSwitcher = React.lazy(() =>
+  import('./react_embeddable/renderer/new_panel_empty_state_switcher').then(
+    ({ NewPanelEmptyStateSwitcher }) => ({ default: NewPanelEmptyStateSwitcher })
+  )
+);
 
 export class LensPlugin {
   private datatableVisualization: DatatableVisualizationType | undefined;
@@ -640,6 +649,17 @@ export class LensPlugin {
   }
 
   start(core: CoreStart, startDependencies: LensPluginStartDependencies): LensPublicStart {
+    // PROTOTYPE: dev-only switcher for the inline "Create visualization" empty state directions
+    startDependencies.developerToolbar?.registerItem({
+      id: 'lensNewPanelEmptyStateSwitcher',
+      priority: 2,
+      children: React.createElement(
+        React.Suspense,
+        { fallback: null },
+        React.createElement(LazyNewPanelEmptyStateSwitcher)
+      ),
+    });
+
     this.hasDiscoverAccess = core.application.capabilities.discover_v2.show as boolean;
     this.dataViewsService = startDependencies.dataViews;
     // unregisters the Visualize action and registers the lens one

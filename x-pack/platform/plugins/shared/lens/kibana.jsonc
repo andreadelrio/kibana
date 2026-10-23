@@ -47,6 +47,7 @@
       "licensing",
       "fieldsMetadata",
       "cps",
+      "developerToolbar",
     ],
     "requiredBundles": [
       "unifiedSearch",

@@ -5,9 +5,12 @@
  * 2.0.
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
+import useObservable from 'react-use/lib/useObservable';
 import { css } from '@emotion/react';
 import {
+  EuiEmptyPrompt,
+  EuiIllustration,
   EuiText,
   EuiTitle,
   euiCanAnimate,
@@ -16,7 +19,18 @@ import {
   useEuiTheme,
   type UseEuiTheme,
 } from '@elastic/eui';
+// eslint-disable-next-line @kbn/eslint/no_viz_naming -- export name from @elastic/eui-illustrations
+import { searchAnalyticsDataviz } from '@elastic/eui-illustrations';
 import { i18n } from '@kbn/i18n';
+import type { DataView } from '@kbn/data-views-plugin/public';
+import type { LensRendererProps } from '@kbn/lens-common';
+import type { TimeRange } from '@kbn/es-query';
+import { LensRenderer } from './lens_custom_renderer_component';
+import {
+  newPanelEmptyStateVariant$,
+  newPanelStarterRequest$,
+} from './new_panel_empty_state_variant';
+import { getSuggestionAttributes, type MiniChartId } from './prototype_chart_attributes';
 
 type PreviewProps = Pick<UseEuiTheme['euiTheme']['colors'], 'vis'>;
 
@@ -94,7 +108,11 @@ const TopValuesPreview = ({ vis }: PreviewProps) => {
 
 // PROTOTYPE: hardcoded for the Kibana Sample Data Logs, ordered by how often observability users
 // reach for each chart. They should come from the suggestions API for the selected data view.
-const SUGGESTIONS = [
+const SUGGESTIONS: Array<{
+  id: MiniChartId;
+  label: string;
+  Preview: (props: PreviewProps) => React.JSX.Element;
+}> = [
   {
     id: 'requestsOverTime',
     label: i18n.translate('xpack.lens.newPanelEmptyState.requestsOverTime', {
@@ -125,7 +143,116 @@ const SUGGESTIONS = [
   },
 ];
 
-export function NewPanelEmptyState() {
+// PROTOTYPE "Mini charts" direction: a real, non-interactive Lens chart as the card thumbnail
+const MiniChart = ({
+  id,
+  attributes,
+  timeRange,
+}: {
+  id: string;
+  attributes: ReturnType<typeof getSuggestionAttributes>[MiniChartId];
+  timeRange?: TimeRange;
+}) => (
+  <span css={{ display: 'block', width: '100%', height: '100%', pointerEvents: 'none' }}>
+    <LensRenderer
+      id={`lnsNewPanelMiniChart-${id}`}
+      attributes={attributes as LensRendererProps['attributes']}
+      timeRange={timeRange}
+      viewMode="view"
+      disableTriggers
+      hidePanelTitles
+      withDefaultActions={false}
+      syncTooltips={false}
+      syncCursor={false}
+      noPadding
+      style={{ height: '100%' }}
+    />
+  </span>
+);
+
+// PROTOTYPE "Empty prompt" direction: no suggestions, just an illustration and a pointer to the editor
+const EmptyPromptDirection = () => {
+  const { euiTheme } = useEuiTheme();
+  return (
+    <div
+      css={{ display: 'flex', height: '100%', overflow: 'auto' }}
+      data-test-subj="lnsNewPanelEmptyState"
+    >
+      <EuiEmptyPrompt
+        icon={
+          <EuiIllustration
+            // eslint-disable-next-line @kbn/eslint/no_viz_naming -- export name from @elastic/eui-illustrations
+            type={searchAnalyticsDataviz}
+            alt=""
+            fullWidth={false}
+            css={{ inlineSize: euiTheme.base * 8 }}
+          />
+        }
+        title={
+          <h2>
+            {i18n.translate('xpack.lens.newPanelEmptyState.emptyPrompt.title', {
+              defaultMessage: 'Start building your visualization',
+            })}
+          </h2>
+        }
+        titleSize="xs"
+        body={
+          <p css={{ textWrap: 'balance' }}>
+            {i18n.translate('xpack.lens.newPanelEmptyState.emptyPrompt.body', {
+              defaultMessage: 'Add fields in the editor and your chart will appear here.',
+            })}
+          </p>
+        }
+      />
+    </div>
+  );
+};
+
+export function NewPanelEmptyState({
+  panelId,
+  dataView,
+  timeRange,
+}: {
+  panelId: string;
+  dataView?: DataView;
+  timeRange?: TimeRange;
+}) {
+  const variant = useObservable(newPanelEmptyStateVariant$, newPanelEmptyStateVariant$.getValue());
+  const dataViewId = dataView?.id;
+  const timeField = dataView?.timeFieldName;
+  const miniCharts = useMemo(
+    () =>
+      variant === 'miniCharts' && dataViewId && timeField
+        ? getSuggestionAttributes(dataViewId, timeField, { thumbnail: true })
+        : undefined,
+    [variant, dataViewId, timeField]
+  );
+  // PROTOTYPE: clicking a card applies its full chart to this panel's open flyout
+  const onSelect = useMemo(() => {
+    if (!dataViewId || !timeField) {
+      return undefined;
+    }
+    const suggestions = getSuggestionAttributes(dataViewId, timeField, { thumbnail: false });
+    return (id: MiniChartId) =>
+      newPanelStarterRequest$.next({ panelId, attributes: suggestions[id] });
+  }, [panelId, dataViewId, timeField]);
+
+  if (variant === 'emptyPrompt') {
+    return <EmptyPromptDirection />;
+  }
+
+  return <SuggestionsDirection miniCharts={miniCharts} timeRange={timeRange} onSelect={onSelect} />;
+}
+
+function SuggestionsDirection({
+  miniCharts,
+  timeRange,
+  onSelect,
+}: {
+  miniCharts?: ReturnType<typeof getSuggestionAttributes>;
+  timeRange?: TimeRange;
+  onSelect?: (id: MiniChartId) => void;
+}) {
   const euiThemeContext = useEuiTheme();
   const { euiTheme } = euiThemeContext;
   const hoverShadow = useEuiShadow('s');
@@ -197,6 +324,14 @@ export function NewPanelEmptyState() {
       padding: 0 ${euiTheme.size.xs} ${euiTheme.size.xxs};
       text-wrap: balance;
     `,
+    // Real charts need more room than the static thumbnails, and a plain background like a panel
+    miniChartPreview: css`
+      height: ${euiTheme.base * 6}px;
+      padding: ${euiTheme.size.xs};
+      background: ${euiTheme.colors.backgroundBasePlain};
+      border: ${euiTheme.border.thin};
+      overflow: hidden;
+    `,
     preview: css`
       display: flex;
       align-items: center;
@@ -226,8 +361,7 @@ export function NewPanelEmptyState() {
         >
           <p>
             {i18n.translate('xpack.lens.newPanelEmptyState.description', {
-              defaultMessage:
-                'Pick a suggested chart, or build your own in the editor on the right.',
+              defaultMessage: 'Pick a suggested chart, or build your own in the editor.',
             })}
           </p>
         </EuiText>
@@ -237,14 +371,17 @@ export function NewPanelEmptyState() {
               <button
                 type="button"
                 css={styles.card}
-                // PROTOTYPE: applying a suggestion is not wired up yet
-                onClick={() => {}}
+                onClick={() => onSelect?.(id)}
                 data-test-subj={`lnsNewPanelSuggestion-${id}`}
               >
-                <span css={styles.preview}>
-                  <svg viewBox="0 0 64 40" width={72} height={45} aria-hidden="true">
-                    <Preview vis={euiTheme.colors.vis} />
-                  </svg>
+                <span css={[styles.preview, miniCharts && styles.miniChartPreview]}>
+                  {miniCharts ? (
+                    <MiniChart id={id} attributes={miniCharts[id]} timeRange={timeRange} />
+                  ) : (
+                    <svg viewBox="0 0 64 40" width={72} height={45} aria-hidden="true">
+                      <Preview vis={euiTheme.colors.vis} />
+                    </svg>
+                  )}
                 </span>
                 <EuiText size="xs" css={styles.label}>
                   <strong>{label}</strong>

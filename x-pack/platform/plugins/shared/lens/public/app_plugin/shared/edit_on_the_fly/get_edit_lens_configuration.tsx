@@ -6,7 +6,7 @@
  */
 
 import type { FC } from 'react';
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { EuiFlyout, EuiLoadingSpinner, EuiOverlayMask } from '@elastic/eui';
 import { i18n } from '@kbn/i18n';
 import { Provider } from 'react-redux-v7';
@@ -48,6 +48,11 @@ import type { EditConfigPanelProps, LensPanelStateUpdater } from './types';
 import { LensDocumentService } from '../../../persistence';
 import { EditorFrameServiceProvider } from '../../../editor_frame_service/editor_frame_service_context';
 import { ESQLEditorContext } from '../../../editor_frame_service/editor_frame/config_panel/esql_editor_context';
+import {
+  newPanelEmptyStateVariant$,
+  newPanelStarterRequest$,
+} from '../../../react_embeddable/renderer/new_panel_empty_state_variant';
+import { getNewPanelStarterAttributes } from '../../../react_embeddable/renderer/prototype_chart_attributes';
 
 export type EditLensConfigurationProps = Omit<
   EditConfigPanelProps,
@@ -200,6 +205,48 @@ const EditLensConfiguration: FC<
     useState<TypedLensSerializedState['attributes']>(attributes);
 
   const editorHeightRef = useRef<number | undefined>(undefined);
+
+  // PROTOTYPE: a brand-new panel can be restarted from outside the flyout, by picking a suggestion
+  // card in its empty state or by switching to or from the "Default time series" direction in the
+  // developer toolbar. The new starter chart replaces the configuration in the flyout and the panel.
+  useEffect(() => {
+    if (!isNewPanel) {
+      return;
+    }
+    const applyStarter = (starter: TypedLensSerializedState['attributes']) => {
+      setCurrentAttributes(starter);
+      // New panels are by value, so there's no saved object id; the handler accepts that
+      updateByRefInput?.(savedObjectId as string, starter);
+    };
+
+    const suggestionSubscription = newPanelStarterRequest$.subscribe((request) => {
+      if (request.panelId === panelId) {
+        applyStarter(request.attributes as TypedLensSerializedState['attributes']);
+      }
+    });
+
+    let previousVariant = newPanelEmptyStateVariant$.getValue();
+    const variantSubscription = newPanelEmptyStateVariant$.subscribe(async (variant) => {
+      const changesStarter =
+        (previousVariant === 'defaultTimeSeries') !== (variant === 'defaultTimeSeries');
+      previousVariant = variant;
+      if (!changesStarter) {
+        return;
+      }
+      const starter = getNewPanelStarterAttributes(
+        await lensServices.dataViews.getDefaultDataView(),
+        variant
+      );
+      if (starter) {
+        applyStarter(starter as TypedLensSerializedState['attributes']);
+      }
+    });
+
+    return () => {
+      suggestionSubscription.unsubscribe();
+      variantSubscription.unsubscribe();
+    };
+  }, [isNewPanel, lensServices.dataViews, panelId, savedObjectId, updateByRefInput]);
 
   /**
    * During inline editing of a by reference panel, the panel is converted to a by value one.

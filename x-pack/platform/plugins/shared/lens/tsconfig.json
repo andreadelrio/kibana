@@ -13,6 +13,7 @@
     "test/scout_search_sessions/**/*"
   ],
   "kbn_references": [
+    "@kbn/developer-toolbar-plugin",
     "@kbn/spaces-plugin",
     "@kbn/core",
     "@kbn/task-manager-plugin",
