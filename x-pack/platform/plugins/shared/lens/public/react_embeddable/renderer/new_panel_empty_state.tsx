@@ -78,19 +78,29 @@ const MetricPreview = ({ vis }: PreviewProps) => (
   </>
 );
 
-const LineOverTimePreview = ({ vis }: PreviewProps) => {
-  const points = '4,26 12,22 20,24 28,15 36,18 44,10 52,14 60,8';
+const TablePreview = ({ vis }: PreviewProps) => {
+  const rows = [0, 1, 2, 3];
   return (
     <>
-      <polygon points={`4,36 ${points} 60,36`} fill={vis.euiColorVis0} opacity={0.15} />
-      <polyline
-        points={points}
-        fill="none"
-        stroke={vis.euiColorVis0}
-        strokeWidth={2}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
+      <rect x={4} y={4} width={56} height={7} rx={1.5} fill={vis.euiColorVis0} opacity={0.35} />
+      {rows.map((row) => {
+        const y = 15 + row * 6.5;
+        return (
+          <React.Fragment key={row}>
+            <rect x={6} y={y} width={22 - row * 3} height={3} rx={1} fill={vis.euiColorVis0} />
+            <rect x={36} y={y} width={8} height={3} rx={1} fill={vis.euiColorVis0} opacity={0.6} />
+            <rect x={48} y={y} width={10} height={3} rx={1} fill={vis.euiColorVis0} opacity={0.6} />
+            <rect
+              x={4}
+              y={y + 4.75}
+              width={56}
+              height={0.5}
+              fill={vis.euiColorVis0}
+              opacity={0.2}
+            />
+          </React.Fragment>
+        );
+      })}
     </>
   );
 };
@@ -128,11 +138,11 @@ const SUGGESTIONS: Array<{
     Preview: MetricPreview,
   },
   {
-    id: 'responseSizeOverTime',
-    label: i18n.translate('xpack.lens.newPanelEmptyState.responseSizeOverTime', {
-      defaultMessage: 'Response size over time',
+    id: 'trafficByHost',
+    label: i18n.translate('xpack.lens.newPanelEmptyState.trafficByHost', {
+      defaultMessage: 'Traffic by host',
     }),
-    Preview: LineOverTimePreview,
+    Preview: TablePreview,
   },
   {
     id: 'topUrls',
@@ -175,7 +185,7 @@ const EmptyPromptDirection = () => {
   const { euiTheme } = useEuiTheme();
   return (
     <div
-      css={{ display: 'flex', height: '100%', overflow: 'auto' }}
+      css={{ display: 'flex', width: '100%', height: '100%', overflow: 'auto' }}
       data-test-subj="lnsNewPanelEmptyState"
     >
       <EuiEmptyPrompt

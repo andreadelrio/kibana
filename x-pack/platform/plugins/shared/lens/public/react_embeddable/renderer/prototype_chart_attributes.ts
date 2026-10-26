@@ -17,14 +17,14 @@ import { createEmptyLensState } from '../helper';
 type Attributes = LensSerializedState['attributes'];
 type Column = Record<string, unknown>;
 
-const dateHistogram = (timeField: string, includeEmptyRows = true): Column => ({
+const dateHistogram = (timeField: string): Column => ({
   label: timeField,
   dataType: 'date',
   operationType: 'date_histogram',
   sourceField: timeField,
   isBucketed: true,
   scale: 'interval',
-  params: { interval: 'auto', includeEmptyRows, dropPartials: false },
+  params: { interval: 'auto', includeEmptyRows: true, dropPartials: false },
 });
 
 const count = (extra: Column = {}): Column => ({
@@ -39,7 +39,18 @@ const count = (extra: Column = {}): Column => ({
   ...extra,
 });
 
-const averageBytes = (): Column => ({
+const uniqueCount = (field: string, extra: Column = {}): Column => ({
+  label: `Unique count of ${field}`,
+  dataType: 'number',
+  operationType: 'unique_count',
+  sourceField: field,
+  isBucketed: false,
+  scale: 'ratio',
+  params: { emptyAsNull: true },
+  ...extra,
+});
+
+const averageBytes = (extra: Column = {}): Column => ({
   label: 'Average of bytes',
   dataType: 'number',
   operationType: 'average',
@@ -47,9 +58,15 @@ const averageBytes = (): Column => ({
   isBucketed: false,
   scale: 'ratio',
   params: { emptyAsNull: true, format: { id: 'bytes', params: { decimals: 0 } } },
+  ...extra,
 });
 
-const topValues = (field: string, size: number, orderByColumnId: string): Column => ({
+const topValues = (
+  field: string,
+  size: number,
+  orderByColumnId: string,
+  extra: Column = {}
+): Column => ({
   label: `Top ${size} values of ${field}`,
   dataType: 'string',
   operationType: 'terms',
@@ -64,6 +81,7 @@ const topValues = (field: string, size: number, orderByColumnId: string): Column
     missingBucket: false,
     parentFormat: { id: 'terms' },
   },
+  ...extra,
 });
 
 const formBasedDocument = ({
@@ -120,7 +138,7 @@ const xyVisualization = (layer: Record<string, unknown>, thumbnail: boolean) => 
   layers: [{ layerId: 'layer1', layerType: 'data', ...layer }],
 });
 
-export type MiniChartId = 'requestsOverTime' | 'serverErrors' | 'responseSizeOverTime' | 'topUrls';
+export type MiniChartId = 'requestsOverTime' | 'serverErrors' | 'trafficByHost' | 'topUrls';
 
 /**
  * The four suggested starter charts. `thumbnail` strips the chrome for the "Mini charts" card
@@ -160,15 +178,34 @@ export const getSuggestionAttributes = (
       metricAccessor: 'y',
     },
   }),
-  responseSizeOverTime: formBasedDocument({
+  trafficByHost: formBasedDocument({
     dataViewId,
-    visualizationType: 'lnsXY',
-    // An average has no value for an empty bucket, so skip empty buckets instead of plotting nulls
-    columns: { x: dateHistogram(timeField, false), y: averageBytes() },
-    visualization: xyVisualization(
-      { seriesType: 'area', xAccessor: 'x', accessors: ['y'] },
-      thumbnail
-    ),
+    visualizationType: 'lnsDatatable',
+    columns: {
+      host: topValues('host.keyword', 10, 'requests', { label: 'Host', customLabel: true }),
+      requests: count({ label: 'Requests', customLabel: true }),
+      // A thumbnail only has room for two columns
+      ...(thumbnail
+        ? {}
+        : {
+            visitors: uniqueCount('clientip', { label: 'Unique visitors', customLabel: true }),
+            size: averageBytes({ label: 'Avg. response size', customLabel: true }),
+          }),
+    },
+    visualization: {
+      layerId: 'layer1',
+      layerType: 'data',
+      columns: thumbnail
+        ? // Requests gets a fixed width so its numbers stay visible; Host fills the rest of the card
+          [{ columnId: 'host' }, { columnId: 'requests', width: 74 }]
+        : [
+            { columnId: 'host' },
+            { columnId: 'requests' },
+            { columnId: 'visitors' },
+            { columnId: 'size' },
+          ],
+      ...(thumbnail ? { density: 'compact' } : {}),
+    },
   }),
   topUrls: formBasedDocument({
     dataViewId,
