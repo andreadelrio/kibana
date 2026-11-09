@@ -116,6 +116,7 @@
     "@kbn/core-chrome-browser-mocks",
     "@kbn/sort-predicates",
     "@kbn/presentation-publishing",
+    "@kbn/panel-loader",
     "@kbn/saved-objects-finder-plugin",
     "@kbn/unified-data-table",
     "@kbn/shared-ux-markdown",

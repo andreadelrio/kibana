@@ -58,6 +58,7 @@ import {
 import { defaultPaletteParams } from '../constants';
 import { ChartSplit } from './chart_split';
 import { getSplitDimensionAccessor, createSplitPoint } from '../utils/get_split_dimension_utils';
+import { getEntranceAnimation } from '../utils/entrance_animation';
 
 declare global {
   interface Window {
@@ -960,6 +961,7 @@ export const HeatmapComponent: FC<HeatmapRenderProps> = memo(
               footer={TooltipFooter}
             />
             <Settings
+              entranceAnimation={getEntranceAnimation()}
               onRenderChange={onRenderChange}
               noResults={
                 <EmptyPlaceholder icon={IconChartHeatmap} renderComplete={onRenderChange} />

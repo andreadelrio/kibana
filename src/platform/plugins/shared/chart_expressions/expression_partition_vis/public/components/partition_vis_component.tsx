@@ -78,6 +78,7 @@ import {
 import { filterOutConfig } from '../utils/filter_out_config';
 import type { ColumnCellValueActions, FilterEvent, StartDeps } from '../types';
 import { getMultiFilterCells } from '../utils/filter_helpers';
+import { getEntranceAnimation } from '../utils/entrance_animation';
 
 declare global {
   interface Window {
@@ -572,6 +573,7 @@ const PartitionVisComponent = (props: PartitionVisComponentProps) => {
               />
               <Tooltip {...tooltip} footer={TooltipFooter} />
               <Settings
+                entranceAnimation={getEntranceAnimation()}
                 noResults={
                   <VisualizationNoResults chartType={visType} renderComplete={onRenderChange} />
                 }

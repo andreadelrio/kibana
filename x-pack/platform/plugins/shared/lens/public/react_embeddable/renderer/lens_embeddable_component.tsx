@@ -7,6 +7,7 @@
 
 import { useBatchedPublishingSubjects } from '@kbn/presentation-publishing';
 import React, { useEffect } from 'react';
+import { PanelLoader } from '@kbn/panel-loader';
 import type { LensInternalApi } from '@kbn/lens-common';
 import type { LensApi } from '@kbn/lens-common-2';
 import { ExpressionWrapper } from '../expression_wrapper';
@@ -53,7 +54,11 @@ export function LensEmbeddableComponent({
 
   return (
     <div css={{ width: '100%', height: '100%', position: 'relative' }}>
-      {expressionParams == null || blockingErrors.length ? null : (
+      {blockingErrors.length ? null : expressionParams == null ? (
+        // POC: keep showing the loader while the expression is being prepared, so the embeddable's
+        // bootstrap loader hands straight over to the expression renderer's one (no blank body between)
+        <PanelLoader />
+      ) : (
         <ExpressionWrapper {...expressionParams} paddingTop={hideTitle || !panelTitle?.length} />
       )}
       <UserMessages

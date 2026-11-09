@@ -40,6 +40,7 @@ import { getThemeService, getFormatService } from '../services';
 import { getColor, getMetricFormatter } from './helpers';
 import { getSecondaryMetricInfo } from './secondary_metric_info';
 import type { TrendConfig } from './secondary_metric_info';
+import { getEntranceAnimation } from '../utils/entrance_animation';
 
 const buildFilterEvent = (rowIdx: number, columnIdx: number, table: Datatable) => {
   const column = table.columns[columnIdx];
@@ -382,6 +383,7 @@ export const MetricVis = ({
       >
         <Chart {...getOverridesFor(overrides, 'chart')}>
           <Settings
+            entranceAnimation={getEntranceAnimation()}
             onWillRender={onWillRender}
             locale={i18n.getLocale()}
             theme={[

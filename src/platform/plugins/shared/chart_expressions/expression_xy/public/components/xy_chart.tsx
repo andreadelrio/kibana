@@ -133,6 +133,7 @@ import { LegendColorPickerWrapperContext, LegendColorPickerWrapper } from './leg
 import { createSplitPoint, getTooltipActions, getXSeriesPoint } from './tooltip/tooltip_actions';
 import { getComputedColumnWarning } from './tooltip/computed_column_warning';
 import { GlobalXYChartStyles } from './xy_chart.styles';
+import { getEntranceAnimation } from '../helpers/entrance_animation';
 
 declare global {
   interface Window {
@@ -935,6 +936,7 @@ export function XYChart({
               footer={TooltipFooter}
             />
             <Settings
+              entranceAnimation={getEntranceAnimation()}
               noResults={
                 <EmptyPlaceholder
                   icon={icon}
