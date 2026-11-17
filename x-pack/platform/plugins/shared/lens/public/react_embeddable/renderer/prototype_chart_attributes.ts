@@ -218,6 +218,45 @@ export const getSuggestionAttributes = (
   }),
 });
 
+export type GenericSuggestionId = 'countOverTime' | 'totalCount' | 'countTable' | 'countBars';
+
+/**
+ * "Suggestions v1" direction: generic starters that only use what every time-based data view has,
+ * its time field and the record count, so they work without knowing anything about the data.
+ */
+export const getGenericSuggestionAttributes = (
+  dataViewId: string,
+  timeField: string
+): Record<GenericSuggestionId, Attributes> => {
+  const overTime = (seriesType: string) =>
+    formBasedDocument({
+      dataViewId,
+      visualizationType: 'lnsXY',
+      columns: { x: dateHistogram(timeField), y: count() },
+      visualization: xyVisualization({ seriesType, xAccessor: 'x', accessors: ['y'] }, false),
+    });
+  return {
+    countOverTime: overTime('line'),
+    totalCount: formBasedDocument({
+      dataViewId,
+      visualizationType: 'lnsMetric',
+      columns: { y: count({ label: 'Total requests', customLabel: true }) },
+      visualization: { layerId: 'layer1', layerType: 'data', metricAccessor: 'y' },
+    }),
+    countTable: formBasedDocument({
+      dataViewId,
+      visualizationType: 'lnsDatatable',
+      columns: { x: dateHistogram(timeField), y: count() },
+      visualization: {
+        layerId: 'layer1',
+        layerType: 'data',
+        columns: [{ columnId: 'x' }, { columnId: 'y' }],
+      },
+    }),
+    countBars: overTime('bar'),
+  };
+};
+
 /**
  * "Default time series" direction: a new panel starts as a real count-over-time chart, so the
  * dashboard shows data right away and the flyout opens with both axes filled in.

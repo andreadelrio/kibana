@@ -23,14 +23,19 @@ import {
 import { searchAnalyticsDataviz } from '@elastic/eui-illustrations';
 import { i18n } from '@kbn/i18n';
 import type { DataView } from '@kbn/data-views-plugin/public';
-import type { LensRendererProps } from '@kbn/lens-common';
+import type { LensRendererProps, LensSerializedState } from '@kbn/lens-common';
 import type { TimeRange } from '@kbn/es-query';
 import { LensRenderer } from './lens_custom_renderer_component';
 import {
   newPanelEmptyStateVariant$,
   newPanelStarterRequest$,
 } from './new_panel_empty_state_variant';
-import { getSuggestionAttributes, type MiniChartId } from './prototype_chart_attributes';
+import {
+  getGenericSuggestionAttributes,
+  getSuggestionAttributes,
+  type GenericSuggestionId,
+  type MiniChartId,
+} from './prototype_chart_attributes';
 
 type PreviewProps = Pick<UseEuiTheme['euiTheme']['colors'], 'vis'>;
 
@@ -116,13 +121,190 @@ const TopValuesPreview = ({ vis }: PreviewProps) => {
   );
 };
 
+// PROTOTYPE "Suggestions v1" previews: miniature panels drawn to look like the real Lens chart
+// (same layout, text colors and borders), in a 120x60 box. The numbers are made up.
+type PanelPreviewProps = PreviewProps & { colors: UseEuiTheme['euiTheme']['colors'] };
+
+const PLOT = { left: 16, right: 116, top: 6, bottom: 48 };
+
+const PanelAxes = ({ colors }: PanelPreviewProps) => {
+  const gridYs = [PLOT.top, 20, 34];
+  return (
+    <>
+      {gridYs.map((y) => (
+        <React.Fragment key={y}>
+          <line
+            x1={PLOT.left}
+            x2={PLOT.right}
+            y1={y}
+            y2={y}
+            stroke={colors.borderBaseSubdued}
+            strokeWidth={0.5}
+          />
+          <rect
+            x={4}
+            y={y - 1.25}
+            width={8}
+            height={2}
+            rx={1}
+            fill={colors.textDisabled}
+            opacity={0.5}
+          />
+        </React.Fragment>
+      ))}
+      <rect
+        x={4}
+        y={PLOT.bottom - 1.25}
+        width={8}
+        height={2}
+        rx={1}
+        fill={colors.textDisabled}
+        opacity={0.5}
+      />
+      <line
+        x1={PLOT.left}
+        x2={PLOT.right}
+        y1={PLOT.bottom}
+        y2={PLOT.bottom}
+        stroke={colors.borderBasePlain}
+        strokeWidth={0.75}
+      />
+      {[24, 50, 76, 102].map((x) => (
+        <rect
+          key={x}
+          x={x - 7}
+          y={52.5}
+          width={14}
+          height={2}
+          rx={1}
+          fill={colors.textDisabled}
+          opacity={0.5}
+        />
+      ))}
+    </>
+  );
+};
+
+const COUNT_SERIES = [18, 24, 21, 30, 26, 34, 29, 22, 31, 38, 33, 27];
+
+const toPlotY = (value: number) => PLOT.bottom - (value / 42) * (PLOT.bottom - PLOT.top);
+
+const LinePanelPreview = (props: PanelPreviewProps) => {
+  const step = (PLOT.right - PLOT.left - 4) / (COUNT_SERIES.length - 1);
+  const points = COUNT_SERIES.map((v, i) => `${PLOT.left + 2 + i * step},${toPlotY(v)}`).join(' ');
+  return (
+    <>
+      <PanelAxes {...props} />
+      <polyline
+        points={points}
+        fill="none"
+        stroke={props.vis.euiColorVis0}
+        strokeWidth={1.25}
+        strokeLinejoin="round"
+        strokeLinecap="round"
+      />
+    </>
+  );
+};
+
+const BarPanelPreview = (props: PanelPreviewProps) => {
+  const slot = (PLOT.right - PLOT.left) / COUNT_SERIES.length;
+  return (
+    <>
+      <PanelAxes {...props} />
+      {COUNT_SERIES.map((v, i) => (
+        <rect
+          key={i}
+          x={PLOT.left + i * slot + slot * 0.15}
+          y={toPlotY(v)}
+          width={slot * 0.7}
+          height={PLOT.bottom - toPlotY(v)}
+          fill={props.vis.euiColorVis0}
+        />
+      ))}
+    </>
+  );
+};
+
+// Lens metric: title top left, large value bottom right, both in the default text color
+const MetricPanelPreview = ({ colors }: PanelPreviewProps) => (
+  <>
+    <text x={5} y={11} fontSize={7} fontWeight={600} fill={colors.textHeading} fontFamily="inherit">
+      Total requests
+    </text>
+    <text
+      x={115}
+      y={54}
+      textAnchor="end"
+      fontSize={24}
+      fontWeight={500}
+      fill={colors.textHeading}
+      fontFamily="inherit"
+    >
+      14,074
+    </text>
+  </>
+);
+
+// Lens datatable: shaded header, a row per date, counts right aligned
+const TablePanelPreview = ({ colors }: PanelPreviewProps) => {
+  const rows = [
+    ['Nov 10, 12:00', '1,284'],
+    ['Nov 10, 13:00', '967'],
+    ['Nov 10, 14:00', '1,412'],
+    ['Nov 10, 15:00', '1,108'],
+  ];
+  const headerHeight = 11;
+  const rowHeight = 12;
+  return (
+    <>
+      <rect x={0} y={0} width={120} height={headerHeight} fill={colors.backgroundBaseSubdued} />
+      <g fontSize={5.5} fontWeight={600} fill={colors.textHeading} fontFamily="inherit">
+        <text x={4} y={7.5}>
+          timestamp per hour
+        </text>
+        <text x={116} y={7.5} textAnchor="end">
+          Count of records
+        </text>
+      </g>
+      {rows.map(([date, count], i) => {
+        const top = headerHeight + i * rowHeight;
+        return (
+          <React.Fragment key={date}>
+            <line
+              x1={0}
+              x2={120}
+              y1={top + rowHeight}
+              y2={top + rowHeight}
+              stroke={colors.borderBaseSubdued}
+              strokeWidth={0.5}
+            />
+            <g fontSize={5.5} fill={colors.textParagraph} fontFamily="inherit">
+              <text x={4} y={top + 7.75}>
+                {date}
+              </text>
+              <text x={116} y={top + 7.75} textAnchor="end">
+                {count}
+              </text>
+            </g>
+          </React.Fragment>
+        );
+      })}
+    </>
+  );
+};
+
+interface SuggestionCard<Id extends string = string> {
+  id: Id;
+  label: string;
+  Preview: (props: PanelPreviewProps) => React.JSX.Element;
+  /** Draw the preview as a miniature panel (plain background, border, fills the card) */
+  panel?: boolean;
+}
+
 // PROTOTYPE: hardcoded for the Kibana Sample Data Logs, ordered by how often observability users
 // reach for each chart. They should come from the suggestions API for the selected data view.
-const SUGGESTIONS: Array<{
-  id: MiniChartId;
-  label: string;
-  Preview: (props: PreviewProps) => React.JSX.Element;
-}> = [
+const SUGGESTIONS: Array<SuggestionCard<MiniChartId>> = [
   {
     id: 'requestsOverTime',
     label: i18n.translate('xpack.lens.newPanelEmptyState.requestsOverTime', {
@@ -153,6 +335,43 @@ const SUGGESTIONS: Array<{
   },
 ];
 
+// PROTOTYPE "Suggestions v1" direction: generic starters built only from the time field and the
+// record count, which every time-based data view has
+const GENERIC_SUGGESTIONS: Array<SuggestionCard<GenericSuggestionId>> = [
+  {
+    id: 'countOverTime',
+    label: i18n.translate('xpack.lens.newPanelEmptyState.generic.countOverTime', {
+      defaultMessage: 'Requests over time',
+    }),
+    Preview: LinePanelPreview,
+    panel: true,
+  },
+  {
+    id: 'totalCount',
+    label: i18n.translate('xpack.lens.newPanelEmptyState.generic.totalCount', {
+      defaultMessage: 'Total requests',
+    }),
+    Preview: MetricPanelPreview,
+    panel: true,
+  },
+  {
+    id: 'countTable',
+    label: i18n.translate('xpack.lens.newPanelEmptyState.generic.countTable', {
+      defaultMessage: 'Requests by date',
+    }),
+    Preview: TablePanelPreview,
+    panel: true,
+  },
+  {
+    id: 'countBars',
+    label: i18n.translate('xpack.lens.newPanelEmptyState.generic.countBars', {
+      defaultMessage: 'Request volume',
+    }),
+    Preview: BarPanelPreview,
+    panel: true,
+  },
+];
+
 // PROTOTYPE "Mini charts" direction: a real, non-interactive Lens chart as the card thumbnail
 const MiniChart = ({
   id,
@@ -160,7 +379,7 @@ const MiniChart = ({
   timeRange,
 }: {
   id: string;
-  attributes: ReturnType<typeof getSuggestionAttributes>[MiniChartId];
+  attributes: LensSerializedState['attributes'];
   timeRange?: TimeRange;
 }) => (
   <span css={{ display: 'block', width: '100%', height: '100%', pointerEvents: 'none' }}>
@@ -237,31 +456,42 @@ export function NewPanelEmptyState({
         : undefined,
     [variant, dataViewId, timeField]
   );
+  const isGeneric = variant === 'suggestionsV1';
   // PROTOTYPE: clicking a card applies its full chart to this panel's open flyout
   const onSelect = useMemo(() => {
     if (!dataViewId || !timeField) {
       return undefined;
     }
-    const suggestions = getSuggestionAttributes(dataViewId, timeField, { thumbnail: false });
-    return (id: MiniChartId) =>
-      newPanelStarterRequest$.next({ panelId, attributes: suggestions[id] });
-  }, [panelId, dataViewId, timeField]);
+    const suggestions: Record<string, LensSerializedState['attributes']> = isGeneric
+      ? getGenericSuggestionAttributes(dataViewId, timeField)
+      : getSuggestionAttributes(dataViewId, timeField, { thumbnail: false });
+    return (id: string) => newPanelStarterRequest$.next({ panelId, attributes: suggestions[id] });
+  }, [panelId, dataViewId, timeField, isGeneric]);
 
   if (variant === 'emptyPrompt') {
     return <EmptyPromptDirection />;
   }
 
-  return <SuggestionsDirection miniCharts={miniCharts} timeRange={timeRange} onSelect={onSelect} />;
+  return (
+    <SuggestionsDirection
+      suggestions={isGeneric ? GENERIC_SUGGESTIONS : SUGGESTIONS}
+      miniCharts={miniCharts}
+      timeRange={timeRange}
+      onSelect={onSelect}
+    />
+  );
 }
 
 function SuggestionsDirection({
+  suggestions,
   miniCharts,
   timeRange,
   onSelect,
 }: {
-  miniCharts?: ReturnType<typeof getSuggestionAttributes>;
+  suggestions: SuggestionCard[];
+  miniCharts?: Record<string, LensSerializedState['attributes']>;
   timeRange?: TimeRange;
-  onSelect?: (id: MiniChartId) => void;
+  onSelect?: (id: string) => void;
 }) {
   const euiThemeContext = useEuiTheme();
   const { euiTheme } = euiThemeContext;
@@ -342,6 +572,14 @@ function SuggestionsDirection({
       border: ${euiTheme.border.thin};
       overflow: hidden;
     `,
+    // Miniature panel: keeps the 2:1 drawing undistorted at any card width
+    panelPreview: css`
+      height: auto;
+      aspect-ratio: 2 / 1;
+      background: ${euiTheme.colors.backgroundBasePlain};
+      border: ${euiTheme.border.thin};
+      overflow: hidden;
+    `,
     preview: css`
       display: flex;
       align-items: center;
@@ -376,7 +614,7 @@ function SuggestionsDirection({
           </p>
         </EuiText>
         <ul css={styles.grid}>
-          {SUGGESTIONS.map(({ id, label, Preview }) => (
+          {suggestions.map(({ id, label, Preview, panel }) => (
             <li key={id}>
               <button
                 type="button"
@@ -384,12 +622,22 @@ function SuggestionsDirection({
                 onClick={() => onSelect?.(id)}
                 data-test-subj={`lnsNewPanelSuggestion-${id}`}
               >
-                <span css={[styles.preview, miniCharts && styles.miniChartPreview]}>
+                <span
+                  css={[
+                    styles.preview,
+                    miniCharts && styles.miniChartPreview,
+                    panel && styles.panelPreview,
+                  ]}
+                >
                   {miniCharts ? (
                     <MiniChart id={id} attributes={miniCharts[id]} timeRange={timeRange} />
+                  ) : panel ? (
+                    <svg viewBox="0 0 120 60" width="100%" height="100%" aria-hidden="true">
+                      <Preview vis={euiTheme.colors.vis} colors={euiTheme.colors} />
+                    </svg>
                   ) : (
                     <svg viewBox="0 0 64 40" width={72} height={45} aria-hidden="true">
-                      <Preview vis={euiTheme.colors.vis} />
+                      <Preview vis={euiTheme.colors.vis} colors={euiTheme.colors} />
                     </svg>
                   )}
                 </span>

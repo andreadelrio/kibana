@@ -14,6 +14,7 @@ import type { LensSerializedState } from '@kbn/lens-common';
  */
 export type NewPanelEmptyStateVariant =
   | 'suggestions'
+  | 'suggestionsV1'
   | 'miniCharts'
   | 'emptyPrompt'
   | 'defaultTimeSeries';
@@ -23,6 +24,7 @@ export const NEW_PANEL_EMPTY_STATE_VARIANTS: Array<{
   label: string;
 }> = [
   { id: 'suggestions', label: 'Suggestions' },
+  { id: 'suggestionsV1', label: 'Suggestions v1' },
   { id: 'miniCharts', label: 'Mini charts' },
   { id: 'emptyPrompt', label: 'Empty prompt' },
   { id: 'defaultTimeSeries', label: 'Default time series' },
